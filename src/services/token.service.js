@@ -113,6 +113,18 @@ const generateVerifyEmailToken = async (user) => {
   return verifyEmailToken;
 };
 
+const generateOTP = () => {
+  return Math.floor(100000 + Math.random() * 900000).toString(); // 6-digit OTP
+};
+
+const saveOTP = async (userId) => {
+  const otp = generateOTP();
+  const otpExpires = moment().add(10, 'minutes').toDate();
+  await userService.updateUserById(userId, { otp, otpExpires });
+  return otp;
+};
+
+
 module.exports = {
   generateToken,
   saveToken,
@@ -120,4 +132,5 @@ module.exports = {
   generateAuthTokens,
   generateResetPasswordToken,
   generateVerifyEmailToken,
+  saveOTP,
 };

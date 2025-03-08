@@ -1,16 +1,19 @@
 const { status } = require("http-status");
 const catchAsync = require('../utils/catchAsync');
 const { authService, userService, tokenService, emailService } = require('../services');
+const ApiError = require('../utils/ApiError');
 
 const register = catchAsync(async (req, res) => {
   const user = await userService.createUser(req.body);
-  const tokens = await tokenService.generateAuthTokens(user);
-  console.log("HTTP Status Code:", status.CREATED);
-  res.status(status.CREATED).json({ user, tokens });
+  const otp = await tokenService.saveOTP(user.id);
+  await emailService.sendSignupOTPEmail(user.email, otp); // Use signup OTP email
+  res.status(status.CREATED).json({ message: 'OTP sent to email for verification' });
 });
+
 
 const login = catchAsync(async (req, res) => {
   const { email, password } = req.body;
+  console.log(req.body);
   const user = await authService.loginUserWithEmailAndPassword(email, password);
   const tokens = await tokenService.generateAuthTokens(user);
   res.send({ user, tokens });
@@ -27,10 +30,16 @@ const refreshTokens = catchAsync(async (req, res) => {
 });
 
 const forgotPassword = catchAsync(async (req, res) => {
-  const resetPasswordToken = await tokenService.generateResetPasswordToken(req.body.email);
-  await emailService.sendResetPasswordEmail(req.body.email, resetPasswordToken);
-  res.status(status.NO_CONTENT).send();
+  const { email } = req.body;
+  const user = await userService.getUserByEmail(email);
+  if (!user) {
+    throw new ApiError(status.NOT_FOUND, 'No user found with this email');
+  }
+  const otp = await tokenService.saveOTP(user.id);
+  await emailService.sendResetPasswordOTPEmail(user.email, otp); // Use reset password OTP email
+  res.json({ message: 'OTP sent to email for password reset' });
 });
+
 
 const resetPassword = catchAsync(async (req, res) => {
   await authService.resetPassword(req.query.token, req.body.password);
@@ -54,6 +63,28 @@ const socialLogin = catchAsync(async (req, res) => {
   res.status(status.OK).json({ user, tokens });
 });
 
+
+const verifyOtp = catchAsync(async (req, res) => {
+  const { email, otp, type } = req.body;
+  const user = await userService.getUserByEmail(email);
+  
+  if (!user || user.otp !== otp || new Date() > user.otpExpires) {
+    throw new ApiError(status.UNAUTHORIZED, 'Invalid or expired OTP');
+  }
+
+  await userService.updateUserById(user.id, { otp: null, otpExpires: null });
+
+  if (type === 'signup') {
+    await userService.updateUserById(user.id, { isEmailVerified: true });
+    return res.json({ message: 'Email verified successfully' });
+  }
+
+  if (type === 'reset-password') {
+    return res.json({ message: 'OTP verified, redirect to reset-password' });
+  }
+});
+
+
 module.exports = {
   register,
   login,
@@ -64,4 +95,5 @@ module.exports = {
   sendVerificationEmail,
   verifyEmail,
   socialLogin,
+  verifyOtp 
 };

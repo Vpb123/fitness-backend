@@ -38,6 +38,13 @@ const userSchema = mongoose.Schema(
       enum: ['member', 'trainer', 'admin'],
       default: 'member',
     },
+    otp: {
+      type: String,
+      trim: true,
+    },
+    otpExpires: {
+      type: Date,
+    },    
     isEmailVerified: {
       type: Boolean,
       default: false,

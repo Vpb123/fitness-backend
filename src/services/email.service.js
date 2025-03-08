@@ -54,10 +54,35 @@ To verify your email, click on this link: ${verificationEmailUrl}
 If you did not create an account, then ignore this email.`;
   await sendEmail(to, subject, text);
 };
+/**
+ * Send OTP email for signup verification
+ * @param {string} to
+ * @param {string} otp
+ * @returns {Promise}
+ */
+const sendSignupOTPEmail = async (to, otp) => {
+  const subject = 'OTP to Verify Your Email';
+  const text = `Dear user,\n\nYour OTP for email verification is: ${otp}.\nThis OTP is valid for 10 minutes.\n\nIf you did not request this, please ignore this email.`;
+  await sendEmail(to, subject, text);
+};
+
+/**
+ * Send OTP email for password reset
+ * @param {string} to
+ * @param {string} otp
+ * @returns {Promise}
+ */
+const sendResetPasswordOTPEmail = async (to, otp) => {
+  const subject = 'OTP to Reset Your Password';
+  const text = `Dear user,\n\nYour OTP to reset your password is: ${otp}.\nThis OTP is valid for 10 minutes.\n\nIf you did not request a password reset, please ignore this email.`;
+  await sendEmail(to, subject, text);
+};
 
 module.exports = {
   transport,
   sendEmail,
   sendResetPasswordEmail,
   sendVerificationEmail,
+  sendSignupOTPEmail,
+  sendResetPasswordOTPEmail,
 };

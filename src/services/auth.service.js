@@ -1,6 +1,7 @@
 const { status } = require("http-status");
 const tokenService = require('./token.service');
 const userService = require('./user.service');
+const emailService = require('./email.service');
 const Token = require('../models/token.model');
 const ApiError = require('../utils/ApiError');
 const { tokenTypes } = require('../config/tokens');
@@ -16,6 +17,13 @@ const loginUserWithEmailAndPassword = async (email, password) => {
   if (!user || !(await user.isPasswordMatch(password))) {
     throw new ApiError(status.UNAUTHORIZED, 'Incorrect email or password');
   }
+
+  if (!user.isEmailVerified) {
+    const otp = await tokenService.saveOTP(user.id);
+    await emailService.sendSignupOTPEmail(user.email, otp);
+    throw new ApiError(status.UNAUTHORIZED, 'You are not verified. Please check your mail for a new OTP.');
+  }
+
   return user;
 };
 
