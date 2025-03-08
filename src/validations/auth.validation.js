@@ -29,7 +29,7 @@ const logout = {
 
 const refreshTokens = {
   body: Joi.object().keys({
-    
+
     refreshToken: Joi.string().required(),
   }),
 };
@@ -55,6 +55,18 @@ const verifyEmail = {
   }),
 };
 
+const verifyOtp = {
+  body: Joi.object().keys({
+    email: Joi.string().email().required(),
+    otp: Joi.string().length(6).required().messages({
+      'string.length': 'OTP must be exactly 6 digits',
+      'any.required': 'OTP is required',
+    }),
+    type: Joi.string().valid('signup', 'reset-password').required(),
+  }),
+};
+
+
 module.exports = {
   register,
   login,
@@ -63,4 +75,5 @@ module.exports = {
   forgotPassword,
   resetPassword,
   verifyEmail,
+  verifyOtp,
 };

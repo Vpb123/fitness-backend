@@ -15,11 +15,24 @@ router.post('/forgot-password', validate(authValidation.forgotPassword), authCon
 router.post('/reset-password', validate(authValidation.resetPassword), authController.resetPassword);
 router.post('/send-verification-email', auth(), authController.sendVerificationEmail);
 router.post('/verify-email', validate(authValidation.verifyEmail), authController.verifyEmail);
-router.post('/verify-otp', authController.verifyOtp);  
-router.get('/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
+router.post('/verify-otp', validate(authValidation.verifyOtp), authController.verifyOtp);  
+router.get('/google', (req, res, next) => {
+    const role = req.query.role; // Get role from query params
+    console.log(role);
+    passport.authenticate('google', {
+      scope: ['profile', 'email'],
+      state: role, 
+    })(req, res, next);
+  });
+  
+  router.get('/facebook', (req, res, next) => {
+    const role = req.query.role;
+    passport.authenticate('facebook', {
+      scope: ['email'],
+      state: role,
+    })(req, res, next);
+  });
+
 router.get('/google/callback', passport.authenticate('google', { session: false }), authController.socialLogin);
-
-
-router.get('/facebook', passport.authenticate('facebook', { scope: ['email'] }));
 router.get('/facebook/callback', passport.authenticate('facebook', { session: false }), authController.socialLogin);
 module.exports = router;

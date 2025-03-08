@@ -35,18 +35,22 @@ passport.use(
       clientID: config.google.clientId,
       clientSecret: config.google.clientSecret,
       callbackURL: config.google.callbackURL,
-      scope: ['profile', 'email'],
+      passReqToCallback: true, // Allows passing request object
     },
-    async (accessToken, refreshToken, profile, done) => {
+    async (req, accessToken, refreshToken, profile, done) => {
       try {
-        let user = await User.findOne({ email: profile.emails[0].value });
+        const role = req.query.state || 'member'; 
 
+        let user = await User.findOne({ email: profile.emails[0].value });
+        console.log(profile);
         if (!user) {
           user = await User.create({
             name: profile.displayName,
             email: profile.emails[0].value,
             provider: 'google',
-            isEmailVerified: true, // Social login users are automatically verified
+            role, // Save role from query params
+            isEmailVerified: true,
+            dob:new Date('01-01-2000'),
           });
         }
         return done(null, user);
@@ -57,6 +61,7 @@ passport.use(
   )
 );
 
+
 // Facebook OAuth Strategy
 passport.use(
   new FacebookStrategy(
@@ -65,9 +70,12 @@ passport.use(
       clientSecret: config.facebook.clientSecret,
       callbackURL: config.facebook.callbackURL,
       profileFields: ['id', 'displayName', 'emails'],
+      passReqToCallback: true,
     },
-    async (accessToken, refreshToken, profile, done) => {
+    async (req, accessToken, refreshToken, profile, done) => {
       try {
+        const role = req.query.state || 'member';
+
         const email = profile.emails ? profile.emails[0].value : `${profile.id}@facebook.com`;
 
         let user = await User.findOne({ email });
@@ -77,7 +85,9 @@ passport.use(
             name: profile.displayName,
             email,
             provider: 'facebook',
-            isEmailVerified: true, // Social login users are automatically verified
+            role, // Save role from query params
+            isEmailVerified: true,
+            dob:new Date('01-01-2000'),
           });
         }
         return done(null, user);
