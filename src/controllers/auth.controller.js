@@ -60,7 +60,8 @@ const verifyEmail = catchAsync(async (req, res) => {
 const socialLogin = catchAsync(async (req, res) => {
   const user = req.user;
   const tokens = await tokenService.generateAuthTokens(user);
-  res.status(status.OK).json({ user, tokens });
+  const frontendURL = `${process.env.FRONTEND_URL}/auth/social-auth-callback?token=${tokens.access.token}&refreshtoken=${tokens.refresh.token}&user=${encodeURIComponent(JSON.stringify(user))}`;
+  res.redirect(frontendURL);
 });
 
 

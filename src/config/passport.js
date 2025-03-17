@@ -45,10 +45,11 @@ passport.use(
         console.log(profile);
         if (!user) {
           user = await User.create({
-            name: profile.displayName,
+            firstName: profile.name.givenName,
+            lastName:profile.name.familyName,
             email: profile.emails[0].value,
             provider: 'google',
-            role, // Save role from query params
+            role, 
             isEmailVerified: true,
             dob:new Date('01-01-2000'),
           });
@@ -62,7 +63,6 @@ passport.use(
 );
 
 
-// Facebook OAuth Strategy
 passport.use(
   new FacebookStrategy(
     {
@@ -77,15 +77,18 @@ passport.use(
         const role = req.query.state || 'member';
 
         const email = profile.emails ? profile.emails[0].value : `${profile.id}@facebook.com`;
+        const [firstName, ...lastNameParts] = profile.displayName.split(" ");
+        const lastName = lastNameParts.join(" ") || " ";
 
         let user = await User.findOne({ email });
 
         if (!user) {
           user = await User.create({
-            name: profile.displayName,
+            firstName: firstName,
+            lastName:lastName,
             email,
             provider: 'facebook',
-            role, // Save role from query params
+            role, 
             isEmailVerified: true,
             dob:new Date('01-01-2000'),
           });
