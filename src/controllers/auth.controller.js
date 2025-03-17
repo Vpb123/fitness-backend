@@ -36,13 +36,13 @@ const forgotPassword = catchAsync(async (req, res) => {
     throw new ApiError(status.NOT_FOUND, 'No user found with this email');
   }
   const otp = await tokenService.saveOTP(user.id);
-  await emailService.sendResetPasswordOTPEmail(user.email, otp); // Use reset password OTP email
+  await emailService.sendResetPasswordOTPEmail(user.email, otp); 
   res.json({ message: 'OTP sent to email for password reset' });
 });
 
 
 const resetPassword = catchAsync(async (req, res) => {
-  await authService.resetPassword(req.query.token, req.body.password);
+  await authService.resetPassword(req.body.email, req.body.password);
   res.status(status.NO_CONTENT).send();
 });
 
@@ -68,7 +68,7 @@ const verifyOtp = catchAsync(async (req, res) => {
   const { email, otp, type } = req.body;
   const user = await userService.getUserByEmail(email);
   
-  if (!user || user.otp !== otp || new Date() > user.otpExpires) {
+  if (!user || !(await user.isOtpMatch(otp)) || new Date() > user.otpExpires) {
     throw new ApiError(status.UNAUTHORIZED, 'Invalid or expired OTP');
   }
 

@@ -8,7 +8,12 @@ const bcrypt = require('bcryptjs');
  */
 const userSchema = mongoose.Schema(
   {
-    name: {
+    firstName: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    lastName: {
       type: String,
       required: true,
       trim: true,
@@ -44,7 +49,7 @@ const userSchema = mongoose.Schema(
     },
     otpExpires: {
       type: Date,
-    },    
+    },
     isEmailVerified: {
       type: Boolean,
       default: false,
@@ -59,40 +64,50 @@ const userSchema = mongoose.Schema(
     timestamps: true,
   }
 );
+
+
 userSchema.plugin(toJSON);
 userSchema.plugin(paginate);
-/**
- * Check if email is taken (Exclude the user if provided)
- * @param {string} email - The user's email
- * @param {ObjectId} [excludeUserId] - The id of the user to be excluded
- * @returns {Promise<boolean>}
- */
+
+
 userSchema.statics.isEmailTaken = async function (email, excludeUserId) {
   const user = await this.findOne({ email, _id: { $ne: excludeUserId } });
   return !!user;
 };
 
-/**
- * Compare password for authentication
- * @param {string} enteredPassword
- * @returns {Promise<boolean>}
- */
+
 userSchema.methods.isPasswordMatch = async function (enteredPassword) {
   return bcrypt.compare(enteredPassword, this.password);
 };
 
-/**
- * Hash password before saving
- */
+
 userSchema.pre('save', async function (next) {
   if (!this.password || !this.isModified('password')) return next();
-  this.password = bcrypt.hashSync(this.password, 10);
+  this.password = await bcrypt.hash(this.password, 10);
   next();
 });
 
-/**
- * @typedef User
- */
+
+userSchema.pre('save', async function (next) {
+  if (!this.otp || !this.isModified('otp')) return next();
+  this.otp = await bcrypt.hash(this.otp, 10);
+  next();
+});
+
+
+userSchema.methods.isOtpMatch = async function (enteredOtp) {
+  return bcrypt.compare(enteredOtp, this.otp);
+};
+
+
+userSchema.pre('save', async function (next) {
+  if (this.otpExpires && new Date() > this.otpExpires) {
+    this.otp = undefined;
+    this.otpExpires = undefined;
+  }
+  next();
+});
+
 const User = mongoose.model('User', userSchema);
 
 module.exports = User;
