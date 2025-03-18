@@ -17,7 +17,7 @@ const memberSchema = new mongoose.Schema(
     currentTrainerId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Trainer',
-      default: null, // Null if member isn't assigned to a trainer yet
+      default: null, 
     },
     previousTrainerIds: [
         {
@@ -27,11 +27,11 @@ const memberSchema = new mongoose.Schema(
       ],
   },
   {
-    timestamps: true, // Automatically adds createdAt and updatedAt fields
+    timestamps: true, 
   }
 );
 
-// Ensure only one member profile per user
+
 memberSchema.index({ userId: 1 }, { unique: true });
 
 const Member = mongoose.model('MemberProfile', memberSchema);

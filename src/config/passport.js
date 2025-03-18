@@ -28,18 +28,17 @@ const jwtVerify = async (payload, done) => {
 
 const jwtStrategy = new JwtStrategy(jwtOptions, jwtVerify);
 
-// Google OAuth Strategy
 passport.use(
   new GoogleStrategy(
     {
       clientID: config.google.clientId,
       clientSecret: config.google.clientSecret,
       callbackURL: config.google.callbackURL,
-      passReqToCallback: true, // Allows passing request object
+      passReqToCallback: true, 
     },
     async (req, accessToken, refreshToken, profile, done) => {
       try {
-        const role = req.query.state || 'member'; 
+        const role = req.query.state === "trainer" ? "trainer" : "member"; 
 
         let user = await User.findOne({ email: profile.emails[0].value });
         console.log(profile);
@@ -74,7 +73,7 @@ passport.use(
     },
     async (req, accessToken, refreshToken, profile, done) => {
       try {
-        const role = req.query.state || 'member';
+        const role = req.query.state === "trainer" ? "trainer" : "member"; 
 
         const email = profile.emails ? profile.emails[0].value : `${profile.id}@facebook.com`;
         const [firstName, ...lastNameParts] = profile.displayName.split(" ");

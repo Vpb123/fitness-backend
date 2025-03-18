@@ -17,8 +17,8 @@ router.post('/send-verification-email', auth(), authController.sendVerificationE
 router.post('/verify-email', validate(authValidation.verifyEmail), authController.verifyEmail);
 router.post('/verify-otp', validate(authValidation.verifyOtp), authController.verifyOtp);  
 router.get('/google', (req, res, next) => {
-    const role = req.query.role; // Get role from query params
-    console.log(role);
+    const role = req.query.role;
+    console.log("role", role);
     passport.authenticate('google', {
       scope: ['profile', 'email'],
       state: role, 
