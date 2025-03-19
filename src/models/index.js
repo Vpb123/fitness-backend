@@ -1,6 +1,6 @@
 module.exports.Token = require('./token.model');
 module.exports.User = require('./user.model');
-module.exports.Memeber = require("./member.model");
+module.exports.Member = require("./member.model");
 module.exports.Admin = require("./admin.model");
 module.exports.Trainer = require("./trainer.model");
 module.exports.TrainerRequest = require("./trainerRequest.model");

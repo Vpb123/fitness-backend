@@ -6,19 +6,19 @@ const trainerRequestSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Member',
       required: true,
-      index: true, // Fast lookup of requests by member
+      index: true,
     },
     trainerId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Trainer',
       required: true,
-      index: true, // Fast lookup of requests by trainer
+      index: true, 
     },
     goalDescription: {
       type: String,
       required: true,
       trim: true,
-      maxlength: 500, // Prevents excessively long descriptions
+      maxlength: 500, 
     },
     status: {
       type: String,
@@ -28,7 +28,7 @@ const trainerRequestSchema = new mongoose.Schema(
     alternativeTrainerId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Trainer',
-      default: null, // Set when trainer suggests another trainer
+      default: null, 
     },
     createdAt: {
       type: Date,
@@ -39,7 +39,7 @@ const trainerRequestSchema = new mongoose.Schema(
       default: Date.now,
     },
   },
-  { timestamps: true } // Automatically adds createdAt and updatedAt fields
+  { timestamps: true }
 );
 
 // Ensure a member cannot send duplicate requests to the same trainer

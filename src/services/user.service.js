@@ -1,7 +1,9 @@
 const { status } = require("http-status");
 const { User } = require('../models');
 const ApiError = require('../utils/ApiError');
-
+const { Trainer } = require('../models');
+const { Member } = require('../models');
+const { Admin } = require("../models");
 /**
  * Create a user
  * @param {Object} userBody
@@ -11,6 +13,14 @@ const createUser = async (userBody) => {
   if (await User.isEmailTaken(userBody.email)) {
     throw new ApiError(status.BAD_REQUEST, 'Email already taken');
   }
+  const user = await User.create(userBody);
+
+  if (user.role === 'member') {
+    await Member.create({ userId: user.id, subscriptionStatus: 'active' });
+  } else if (user.role === 'trainer') {
+    await Trainer.create({ userId: user.id });
+  }
+
   return User.create(userBody);
 };
 
@@ -79,6 +89,25 @@ const deleteUserById = async (userId) => {
   return user;
 };
 
+const getUserProfileById = async (userId) => {
+  const user = await User.findById(userId);
+  if (!user) throw new ApiError(status.NOT_FOUND, 'User not found');
+
+  let profile = null;
+  if (user.role === 'member') {
+    profile = await Member.findOne({ userId }).populate('currentTrainerId');
+  } else if (user.role === 'trainer') {
+    profile = await Trainer.findOne({ userId });
+  } else if (user.role === 'admin') {
+    profile = await Admin.findOne({ userId });
+  }
+
+  if (!profile) throw new ApiError(status.NOT_FOUND, 'Profile not found');
+  
+  return { user, profile };
+};
+
+
 module.exports = {
   createUser,
   queryUsers,
@@ -86,4 +115,5 @@ module.exports = {
   getUserByEmail,
   updateUserById,
   deleteUserById,
+  getUserProfileById
 };

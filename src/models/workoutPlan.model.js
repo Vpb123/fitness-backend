@@ -18,7 +18,7 @@ const workoutPlanSchema = new mongoose.Schema(
       type: String,
       required: true,
       trim: true,
-      maxlength: 500, // Prevents excessively long descriptions
+      maxlength: 500, 
     },
     startDate: {
       type: Date,
@@ -37,7 +37,7 @@ const workoutPlanSchema = new mongoose.Schema(
         sessionCount: {
           type: Number,
           required: true,
-          min: 1, // Minimum required sessions per week
+          min: 1, 
         },
       },
     ],
@@ -55,10 +55,9 @@ const workoutPlanSchema = new mongoose.Schema(
       default: Date.now,
     },
   },
-  { timestamps: true } // Automatically adds createdAt and updatedAt fields
+  { timestamps: true } 
 );
 
-// Ensure a member can have only one active workout plan at a time
 workoutPlanSchema.index({ memberId: 1, status: 1 });
 
 const WorkoutPlan = mongoose.model('WorkoutPlan', workoutPlanSchema);

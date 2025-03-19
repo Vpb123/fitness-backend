@@ -22,7 +22,7 @@ const trainerSchema = new mongoose.Schema(
     about: {
       type: String,
       trim: true,
-      maxlength: 500, // Limits length of bio
+      maxlength: 500, 
     },
     availability: [
       {

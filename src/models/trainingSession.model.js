@@ -4,20 +4,24 @@ const trainingSessionSchema = new mongoose.Schema(
   {
     memberId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'Member',
+      ref: 'Member', 
       required: true,
       index: true,
     },
     trainerId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'Trainer',
+      ref: 'Trainer', 
       required: true,
       index: true,
     },
     workoutPlanId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'WorkoutPlan',
-      default: null, // Can be null if it's an ad-hoc session
+      default: null,
+    },
+    weekNumber: {
+      type: Number, // New field: Ensures session is linked to a workout plan week
+      required: function () { return this.workoutPlanId !== null; },
     },
     status: {
       type: String,
@@ -54,8 +58,9 @@ const trainingSessionSchema = new mongoose.Schema(
   { timestamps: true } // Automatically adds createdAt and updatedAt fields
 );
 
-// Ensures fast querying by trainer and member
+// Indexing for fast querying
 trainingSessionSchema.index({ trainerId: 1, memberId: 1 });
+trainingSessionSchema.index({ workoutPlanId: 1, weekNumber: 1 });
 
 const TrainingSession = mongoose.model('TrainingSession', trainingSessionSchema);
 

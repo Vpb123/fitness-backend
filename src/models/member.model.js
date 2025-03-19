@@ -34,6 +34,6 @@ const memberSchema = new mongoose.Schema(
 
 memberSchema.index({ userId: 1 }, { unique: true });
 
-const Member = mongoose.model('MemberProfile', memberSchema);
+const Member = mongoose.model('Member', memberSchema);
 
 module.exports = Member;
