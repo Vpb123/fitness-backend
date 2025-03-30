@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { toJSON, paginate } = require('./plugins');
 
 const trainerSchema = new mongoose.Schema(
   {
@@ -58,6 +59,8 @@ const trainerSchema = new mongoose.Schema(
   }
 );
 
+trainerSchema.plugin(toJSON);
+trainerSchema.plugin(paginate);
 // Ensure only one trainer profile per user
 trainerSchema.index({ userId: 1 }, { unique: true });
 
