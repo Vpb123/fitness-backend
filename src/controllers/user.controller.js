@@ -36,7 +36,8 @@ const deleteUser = catchAsync(async (req, res) => {
 });
 
 const getUserProfile = catchAsync(async (req, res) => {
-  const { userId } = req.params;
+  console.log("req.user", req.user);
+  const  userId  = req.user._id;
 
   const { user, profile } = await userService.getUserProfileById(userId);
   

@@ -2,6 +2,20 @@ const {trainerService} = require('../services');
 const catchAsync = require('../utils/catchAsync');
 const { status } = require('http-status');
 const ApiError = require('../utils/ApiError');
+const { getTrainerAvailabilityForDate } = require('../utils/trainerAvailibility');
+
+const getTrainerAvailability = catchAsync(async (req, res) => {
+  const trainerId = req.params.trainerId;
+  const date = req.query.date;
+
+  if (!date) {
+    throw new ApiError(status.BAD_REQUEST, 'Date is required');
+  }
+
+  const slots = await getTrainerAvailabilityForDate(trainerId, date);
+  res.status(200).json({ slots });
+});
+
 
 const getTrainerMembers = catchAsync(async (req, res) => {
   const trainerId = req.user.id; 
@@ -155,31 +169,6 @@ const getAllSessionsByTrainerId = catchAsync(async (req, res) => {
   res.status(200).json({ sessions });
 });
 
-const getAvailableTimeSlotsForRange = catchAsync(async (req, res) => {
-  const { trainerId } = req.params;
-  const { startDate, endDate } = req.query;
-
-  if (!startDate || !endDate) {
-    throw new ApiError(status.BAD_REQUEST, 'Both startDate and endDate are required');
-  }
-
-  const start = new Date(startDate);
-  const end = new Date(endDate);
-
-  if (isNaN(start.getTime()) || isNaN(end.getTime()) || start > end) {
-    throw new ApiError(status.BAD_REQUEST, 'Invalid date range');
-  }
-
-  const availability = await trainerService.getAvailableTimeSlotsForRange(trainerId, start, end);
-
-  res.status(status.OK).json({
-    trainerId,
-    startDate,
-    endDate,
-    availability,
-  });
-});
-
 
 const updateAvailability = catchAsync(async (req, res) => {
   const trainerId = req.user.roleId;
@@ -221,7 +210,7 @@ module.exports = {
   completeSession,
   cancelSession,
   getSessionsByStatus,
-  getAvailableTimeSlotsForRange,
   updateAvailability,
+  getTrainerAvailability,
   getAllSessionsByTrainerId
 };

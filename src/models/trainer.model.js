@@ -34,8 +34,8 @@ const trainerSchema = new mongoose.Schema(
         },
         slots: [
           {
-            startTime: { type: String, required: true }, // "09:00"
-            endTime: { type: String, required: true },   // "11:00"
+            startTime: { type: String, required: true }, 
+            endTime: { type: String, required: true },   
           },
         ],
       },
