@@ -1,6 +1,7 @@
 const {trainerService} = require('../services');
 const catchAsync = require('../utils/catchAsync');
-
+const { status } = require('http-status');
+const ApiError = require('../utils/ApiError');
 
 const getTrainerMembers = catchAsync(async (req, res) => {
   const trainerId = req.user.id; 
@@ -10,16 +11,17 @@ const getTrainerMembers = catchAsync(async (req, res) => {
 });
 
 const getPendingMemberRequests = catchAsync(async (req, res) => {
-  const trainerId = req.user.id; 
+  const trainerId = req.user.roleId; 
+  console.log("trainerId", trainerId);
   const requests = await trainerService.getPendingMemberRequests(trainerId);
   
   res.status(200).json({ requests });
 });
 
 const respondToMemberRequest = catchAsync(async (req, res) => {
-  const trainerId = req.user.id;
+  const trainerId = req.user.roleId;
   const { requestId } = req.params;
-  const { action, alternativeTrainerId } = req.body; // action: "accept", "reject", "suggest"
+  const { action, alternativeTrainerId } = req.body; 
 
   if (!action) {
     throw new ApiError(status.BAD_REQUEST, 'Action is required');
@@ -34,7 +36,7 @@ const respondToMemberRequest = catchAsync(async (req, res) => {
 });
 
 const createWorkoutPlan = catchAsync(async (req, res) => {
-  const trainerId = req.user.id;
+  const trainerId = req.user.roleId;
   const { memberId } = req.params;
   const workoutData = req.body;
 
@@ -61,11 +63,11 @@ const createSession = catchAsync(async (req, res) => {
 });
 
 const updateSession = catchAsync(async (req, res) => {
-  const trainerId = req.user.id;
+  const trainerId = req.user.roleId;
   const { sessionId } = req.params;
   const updateData = req.body;
-
-  const updatedSession = await trainerService.editSession(trainerId, sessionId, updateData);
+  console.log("updateData", updateData," sessionId", sessionId, "  trainerId", trainerId);
+  const updatedSession = await trainerService.updateSession(trainerId, sessionId, updateData);
 
   res.status(200).json({
     message: 'Session updated successfully',
@@ -104,7 +106,7 @@ const respondToSessionRequest = catchAsync(async (req, res) => {
 });
 
 const getPendingSessionRequests = catchAsync(async (req, res) => {
-  const trainerId = req.user.id;
+  const trainerId = req.user.roleId;
 
   const requests = await trainerService.getPendingSessionRequests(trainerId);
 
@@ -125,7 +127,7 @@ const completeSession = catchAsync(async (req, res) => {
 });
 
 const cancelSession = catchAsync(async (req, res) => {
-  const trainerId = req.user.id;
+  const trainerId = req.user.roleId;
   const { sessionId } = req.params;
 
   const cancelledSession = await trainerService.cancelSession(trainerId, sessionId);
@@ -141,6 +143,14 @@ const getSessionsByStatus = catchAsync(async (req, res) => {
   const { status } = req.query;
 
   const sessions = await trainerService.getSessionsByStatus(trainerId, status);
+
+  res.status(200).json({ sessions });
+});
+
+const getAllSessionsByTrainerId = catchAsync(async (req, res) => {
+  const trainerId = req.user.roleId;
+
+  const sessions = await trainerService.getAllsessions(trainerId);
 
   res.status(200).json({ sessions });
 });
@@ -162,7 +172,7 @@ const getAvailableTimeSlotsForRange = catchAsync(async (req, res) => {
 
   const availability = await trainerService.getAvailableTimeSlotsForRange(trainerId, start, end);
 
-  res.status(200).json({
+  res.status(status.OK).json({
     trainerId,
     startDate,
     endDate,
@@ -170,21 +180,32 @@ const getAvailableTimeSlotsForRange = catchAsync(async (req, res) => {
   });
 });
 
-const updateAvailability = catchAsync(async (req, res) => {
-  const trainerId = req.user.id;
-  const { availability } = req.body;
 
-  if (!availability || !Array.isArray(availability)) {
-    throw new ApiError(status.BAD_REQUEST, 'Availability must be an array');
+const updateAvailability = catchAsync(async (req, res) => {
+  const trainerId = req.user.roleId;
+  const { availabilityByDate, availabilityRecurring } = req.body;
+
+  if (!availabilityByDate || typeof availabilityByDate !== 'object') {
+    throw new ApiError(status.BAD_REQUEST, 'availabilityByDate must be an object');
   }
 
-  const updatedTrainer = await trainerService.updateAvailability(trainerId, availability);
+  if (!availabilityRecurring || typeof availabilityRecurring !== 'object') {
+    throw new ApiError(status.BAD_REQUEST, 'availabilityRecurring must be an object');
+  }
 
-  res.status(200).json({
+  const updatedTrainer = await trainerService.updateAvailability(
+    trainerId,
+    availabilityByDate,
+    availabilityRecurring
+  );
+
+  res.status(status.OK).json({
     message: 'Availability updated successfully',
-    availability: updatedTrainer.availability,
+    availabilityByDate: updatedTrainer.availabilityByDate,
+    availabilityRecurring: updatedTrainer.availabilityRecurring,
   });
 });
+
 
 
 module.exports = {
@@ -201,5 +222,6 @@ module.exports = {
   cancelSession,
   getSessionsByStatus,
   getAvailableTimeSlotsForRange,
-  updateAvailability
+  updateAvailability,
+  getAllSessionsByTrainerId
 };

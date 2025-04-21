@@ -7,7 +7,18 @@ const memberSchema = new mongoose.Schema(
       ref: 'User',
       required: true,
       unique: true,
-      index: true,
+    },
+    age:{
+      type: Number,
+      default: 20,
+    },
+    weight:{
+      type: Number,
+      default:70
+    },
+    height:{
+      type: Number,
+      default: 170,
     },
     subscriptionStatus: {
       type: String,

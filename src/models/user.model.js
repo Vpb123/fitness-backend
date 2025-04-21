@@ -26,6 +26,10 @@ const userSchema = mongoose.Schema(
       lowercase: true,
       validate: [validator.isEmail, 'Invalid email'],
     },
+    profilePhoto: {
+      type: String,
+      default: 'https://ui-avatars.com/api/?name=John+Doe&background=random',
+    },
     password: {
       type: String,
       trim: true,

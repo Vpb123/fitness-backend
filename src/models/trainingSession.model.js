@@ -25,8 +25,8 @@ const trainingSessionSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ['requested', 'scheduled', 'completed', 'cancelled'],
-      default: 'requested',
+      enum: ['requested', 'scheduled', 'completed', 'cancelled', 'pending'],
+      default: 'pending',
     },
     scheduledDate: {
       type: Date,
@@ -35,16 +35,21 @@ const trainingSessionSchema = new mongoose.Schema(
     duration: {
       type: Number,
       required: true,
-      min: 10, // Minimum 10-minute session
+      min: 0.5, 
     },
     actualHoursSpent: {
       type: Number,
-      default: 0, // Trainer updates after session completion
+      default: 0, 
     },
-    notes: {
+    sessionType: {
+      type: String,
+      enum: ['TBD', 'Cardio', 'Strength', 'Flexibility', 'Yoga', 'HIIT', 'Core', 'Mobility','Swimming', 'Endurance'],
+      default: 'TBD',
+    },
+    note: {
       type: String,
       trim: true,
-      maxlength: 1000, // Trainer's session feedback
+      maxlength: 1000,
     },
     createdAt: {
       type: Date,
@@ -55,7 +60,7 @@ const trainingSessionSchema = new mongoose.Schema(
       default: Date.now,
     },
   },
-  { timestamps: true } // Automatically adds createdAt and updatedAt fields
+  { timestamps: true } 
 );
 
 // Indexing for fast querying

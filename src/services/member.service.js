@@ -1,5 +1,7 @@
-const { Trainer , TrainerRequest, Member, workoutPlan, TrainingSession } = require('../models/');
+const { Trainer , TrainerRequest, Member, WorkoutPlan, TrainingSession } = require('../models/');
 const { status } = require('http-status')
+const moment = require("moment")
+const ApiError = require('../utils/ApiError');
 /**
  * Get paginated list of trainers with filters
  * @param {Object} filters
@@ -68,8 +70,13 @@ const sendTrainerRequest = async (memberId, requestData) => {
  * @param {Object} sessionData - { scheduledDate, duration }
  * @returns {Promise<Object>}
  */
+const getWeekNumberInWorkoutPlan = (planStartDate, sessionDate) => {
+  return moment(sessionDate).diff(moment(planStartDate).startOf('day'), 'weeks') + 1;
+};
+
 const requestTrainingSession = async (memberId, sessionData) => {
-  const member = await Member.findOne({ userId: memberId });
+
+  const member = await Member.findById(memberId);
   if (!member || !member.currentTrainerId) {
     throw new ApiError(status.BAD_REQUEST, 'You are not connected to any trainer');
   }
@@ -78,37 +85,49 @@ const requestTrainingSession = async (memberId, sessionData) => {
     throw new ApiError(status.BAD_REQUEST, 'Your subscription is not active');
   }
 
-  const workoutplan = await workoutPlan.findOne({
+
+  const workoutPlan = await WorkoutPlan.findOne({
     memberId,
     trainerId: member.currentTrainerId,
     status: 'active',
   });
 
-  if (!workoutplan) {
+  if (!workoutPlan) {
     throw new ApiError(status.BAD_REQUEST, 'No active workout plan with current trainer');
   }
 
-  const weekNumber = getWeekNumberInWorkoutPlan(workoutplan.startDate, sessionData.scheduledDate);
+  const sessionDate = moment(sessionData.scheduledDate).startOf('day');
+  const planStart = moment(workoutPlan.startDate).startOf('day');
+  const planEnd = moment(workoutPlan.endDate).endOf('day');
+
+
+  if (!sessionDate.isBetween(planStart, planEnd, null, '[]')) {
+    throw new ApiError(status.BAD_REQUEST, 'Scheduled date is outside the workout plan range');
+  }
+
+  const weekNumber = getWeekNumberInWorkoutPlan(planStart, sessionDate);
+
+  const isValidWeek = workoutPlan.weeklySessions.some(w => w.weekNumber === weekNumber);
+  if (!isValidWeek) {
+    throw new ApiError(status.BAD_REQUEST, `Week ${weekNumber} is not defined in the workout plan`);
+  }
+
 
   const session = await TrainingSession.create({
     memberId,
     trainerId: member.currentTrainerId,
-    workoutPlanId: workoutplan._id,
+    workoutPlanId: workoutPlan._id,
     weekNumber,
-    scheduledDate: sessionData.scheduledDate,
+    scheduledDate: sessionDate.toDate(),
     duration: sessionData.duration,
+    note: sessionData.note || '',
+    sessionType: 'TBD',
     status: 'requested',
   });
 
   return session;
 };
 
-
-function getWeekNumberInWorkoutPlan(startDate, targetDate) {
-  const msInDay = 1000 * 60 * 60 * 24;
-  const diffInDays = Math.floor((new Date(targetDate) - new Date(startDate)) / msInDay);
-  return Math.floor(diffInDays / 7) + 1;
-}
 
 const getSessionHistory = async (memberId) => {
     return TrainingSession.find({
@@ -195,14 +214,13 @@ const getWorkoutPlan = async (memberId) => {
       memberId,
       status: 'active',
     })
-      .populate('trainerId', 'userId') // populate trainer basic info
+      .populate('trainerId', 'userId')
       .lean();
   
     if (!workoutPlan) {
       throw new ApiError(status.NOT_FOUND, 'No active workout plan found');
     }
   
-    // Count completed sessions under this plan
     const completedCount = await TrainingSession.countDocuments({
       workoutPlanId: workoutPlan._id,
       status: 'completed',
@@ -232,6 +250,98 @@ const getWorkoutPlan = async (memberId) => {
     return review;
   };
 
+  const getUpcomingPendingSessionsGroupedByWeek = async (memberId) => {
+    const today = moment().startOf('day');
+  
+
+    const workoutPlan = await WorkoutPlan.findOne({
+      memberId,
+      status: 'active',
+    }).select('weeklySessions startDate refId');
+  
+    if (!workoutPlan) return [];
+  
+    const startDate = moment(workoutPlan.startDate);
+
+    const weeksSinceStart = today.diff(startDate, 'weeks');
+  
+    const upcomingWeeks = workoutPlan.weeklySessions.filter(
+      (week) => week.weekNumber > weeksSinceStart
+    );
+  
+    const validWeekNumbers = upcomingWeeks.map((w) => w.weekNumber);
+  
+    const sessions = await TrainingSession.find({
+      memberId,
+      status: 'pending',
+      scheduledDate: { $gte: today.toDate() },
+      weekNumber: { $in: validWeekNumbers },
+    })
+      .select('weekNumber scheduledDate workoutPlanId')
+      .sort({ weekNumber: 1 });
+  
+    // 5. Group sessions by weekNumber
+    const groupedByWeek = {};
+    sessions.forEach((session) => {
+      const week = session.weekNumber;
+      if (!groupedByWeek[week]) {
+        groupedByWeek[week] = [];
+      }
+      groupedByWeek[week].push({
+        _id: session._id,
+        scheduledDate: session.scheduledDate,
+        status: session.status,
+        workoutPlanId: session.workoutPlanId,
+      });
+    });
+  
+
+    const result = validWeekNumbers.map((weekNumber) => {
+      const sessions = groupedByWeek[weekNumber] || [];
+    
+      const pendingSessions = sessions.map((session, index) => ({
+        sessionNumber: index + 1,
+        sessionId: session._id,
+        scheduledDate: session.scheduledDate,
+        status: session.status,
+        workoutPlanId: session.workoutPlanId,
+      }));
+    
+      return {
+        weekNumber,
+        pendingSessions,
+      };
+    });
+
+    return result;
+  };
+
+  const requestPendingSession = async (memberId, { sessionId, scheduledDate, note, type }) => {
+
+    const session = await TrainingSession.findOne({
+      _id: sessionId,
+      memberId,
+      status: 'pending',
+    });
+    
+    if (!session) {
+      throw new ApiError(status.NOT_FOUND, 'Pending session not found or already requested');
+    }
+  
+    const today = moment().startOf('day');
+    const scheduled = moment(scheduledDate).startOf('day');
+    if (scheduled.isBefore(today)) {
+      throw new ApiError(status.BAD_REQUEST, 'Scheduled date cannot be in the past');
+    }
+  
+    session.scheduledDate = scheduledDate;
+    session.note = note || '';
+    session.status = 'requested';
+    session.sessionType = type || 'TBD';
+    await session.save();
+  
+    return session;
+  }; 
 module.exports = {
     getAvailableTrainers,
     sendTrainerRequest,
@@ -242,4 +352,6 @@ module.exports = {
     getSessionProgress,
     getWorkoutPlan,
     leaveTrainerReview,
+    getUpcomingPendingSessionsGroupedByWeek,
+    requestPendingSession
 }

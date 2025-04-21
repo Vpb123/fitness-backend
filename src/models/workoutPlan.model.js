@@ -2,6 +2,12 @@ const mongoose = require('mongoose');
 
 const workoutPlanSchema = new mongoose.Schema(
   {
+    refId: {
+      type: String,
+      unique: true,
+      index: true,
+    },
+
     trainerId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Trainer',
@@ -57,6 +63,15 @@ const workoutPlanSchema = new mongoose.Schema(
   },
   { timestamps: true } 
 );
+
+workoutPlanSchema.pre('save', async function (next) {
+  if (this.isNew) {
+    const count = await mongoose.model('WorkoutPlan').countDocuments();
+    const nextNumber = count + 1;
+    this.refId = `WKP-${String(nextNumber).padStart(3, '0')}`;
+  }
+  next();
+});
 
 workoutPlanSchema.index({ memberId: 1, status: 1 });
 

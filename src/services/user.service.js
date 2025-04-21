@@ -21,7 +21,7 @@ const createUser = async (userBody) => {
     await Trainer.create({ userId: user.id });
   }
 
-  return User.create(userBody);
+  return user;
 };
 
 /**
@@ -53,7 +53,19 @@ const getUserById = async (id) => {
  * @returns {Promise<User>}
  */
 const getUserByEmail = async (email) => {
-  return User.findOne({ email });
+  const user= await User.findOne({ email });
+  if (user.role === 'trainer') {
+    const trainer = await Trainer.findOne({ userId: user._id });
+    user.roleId = trainer?._id;     
+    console.log("trainer", trainer);
+  } else if (user.role === 'member') {
+    const member = await Member.findOne({ userId: user._id });
+    user.roleId = member?._id;
+  } else if (user.role === 'admin') {
+    const admin = await Admin.findOne({ userId: user._id });
+    user.roleId = admin?._id;
+  }
+  return user;
 };
 
 /**

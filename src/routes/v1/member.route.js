@@ -14,4 +14,6 @@ router.get('/sessions/history', auth('member'), memberController.getSessionHisto
 router.get('/session-progress', auth('member'), memberController.getSessionProgress);
 router.get('/workout-plan', auth('member'), memberController.getWorkoutPlan);
 router.post('/reviews', auth('member'), memberController.leaveTrainerReview);
-
+router.get('/getpendingsessions', auth('member'), memberController.getPendingSessionsByWeek);
+router.post('/request-pending-session', auth('member'), memberController.requestPendingSession);
+module.exports = router;

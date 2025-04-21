@@ -1,6 +1,5 @@
 const express = require('express');
 const trainerController = require('../../controllers/trainer.controller');
-const express = require('express');
 const auth = require('../../middlewares/auth');
 const validate = require('../../middlewares/validate');
 
@@ -16,9 +15,9 @@ router.delete('/delete-session/:sessionId', auth('trainer'), trainerController.d
 router.post('/respond-session/:sessionId', auth('trainer'), trainerController.respondToSessionRequest);
 router.get('/pending-sessions', auth('trainer'), trainerController.getPendingSessionRequests);
 router.put('/complete-session/:sessionId', auth('trainer'), trainerController.completeSession);
-router.delete('/cancel-session/:sessionId', auth('trainer'), trainerController.cancelSession);
+router.post('/cancel-session/:sessionId', auth('trainer'), trainerController.cancelSession);
 router.get('/sessions', auth('trainer'), trainerController.getSessionsByStatus);
 router.get('/:trainerId/availability', auth(), trainerController.getAvailableTimeSlotsForRange);
 router.put('/update-availability', auth('trainer'), trainerController.updateAvailability);
-
+router.get('/mysessions', auth('trainer'), trainerController.getAllSessionsByTrainerId);
 module.exports = router;

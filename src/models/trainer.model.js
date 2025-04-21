@@ -12,7 +12,7 @@ const trainerSchema = new mongoose.Schema(
     },
     experienceYears: {
       type: Number,
-      required: true,
+     default: 0,
       min: 0, // Prevents negative values
     },
     specializations: {
@@ -25,23 +25,34 @@ const trainerSchema = new mongoose.Schema(
       trim: true,
       maxlength: 500, 
     },
-    availability: [
+    availabilityRecurring: [
       {
         dayOfWeek: {
           type: String,
           enum: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
           required: true,
         },
-        startTime: {
-          type: String,
-          required: true,
-        },
-        endTime: {
-          type: String,
-          required: true,
-        },
+        slots: [
+          {
+            startTime: { type: String, required: true }, // "09:00"
+            endTime: { type: String, required: true },   // "11:00"
+          },
+        ],
       },
     ],
+
+    availabilityByDate: [
+      {
+        date: { type: String, required: true },
+        slots: [
+          {
+            startTime: { type: String, required: true },
+            endTime: { type: String, required: true },
+          },
+        ],
+      },
+    ],
+
     rating: {
       type: Number,
       default: 0,
