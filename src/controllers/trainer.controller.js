@@ -18,7 +18,7 @@ const getTrainerAvailability = catchAsync(async (req, res) => {
 
 
 const getTrainerMembers = catchAsync(async (req, res) => {
-  const trainerId = req.user.id; 
+  const trainerId = req.user.roleId; 
   const members = await trainerService.getTrainerMembers(trainerId);
   
   res.status(200).json({ members });
@@ -103,10 +103,9 @@ const deleteSession = async (trainerId, sessionId) => {
 };
 
 const respondToSessionRequest = catchAsync(async (req, res) => {
-  const trainerId = req.user.id;
+  const trainerId = req.user.roleId;
   const { sessionId } = req.params;
-  const { action } = req.body; // "approve" or "reject"
-
+  const { action } = req.body;
   if (!action) {
     throw new ApiError(status.BAD_REQUEST, 'Action is required');
   }
@@ -163,8 +162,9 @@ const getSessionsByStatus = catchAsync(async (req, res) => {
 
 const getAllSessionsByTrainerId = catchAsync(async (req, res) => {
   const trainerId = req.user.roleId;
+  const { type } = req.query;
 
-  const sessions = await trainerService.getAllsessions(trainerId);
+  const sessions = await trainerService.getAllsessions(trainerId, type);
 
   res.status(200).json({ sessions });
 });
@@ -195,7 +195,29 @@ const updateAvailability = catchAsync(async (req, res) => {
   });
 });
 
+const getAllTrainers = catchAsync(async (req, res) => {
+  const trainers = await trainerService.getAllTrainers();
+  res.status(200).json({ trainers });
+});
 
+const getMyAvailability = catchAsync(async (req, res) => {
+  const trainerId = req.user.roleId;
+  const data = await trainerService.getMyAvailability(trainerId);
+
+  res.status(status.OK).json({ data });
+});
+
+const getTrainerStats = catchAsync(async (req, res) => {
+  const trainerId = req.user.roleId; 
+  const stats =  await trainerService.getTrainerStats(trainerId);
+  res.status(status.OK).json(stats);
+});
+
+const getTrainerSessionStats = catchAsync(async (req, res) => {
+  const trainerId = req.user.roleId;
+  const data = await trainerService.getTrainerSessionStats(trainerId);
+  res.status(status.OK).json(data);
+});
 
 module.exports = {
   getTrainerMembers,
@@ -212,5 +234,9 @@ module.exports = {
   getSessionsByStatus,
   updateAvailability,
   getTrainerAvailability,
-  getAllSessionsByTrainerId
+  getAllSessionsByTrainerId,
+  getAllTrainers,
+  getMyAvailability,
+  getTrainerStats,
+  getTrainerSessionStats
 };

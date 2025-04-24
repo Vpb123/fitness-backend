@@ -1,6 +1,8 @@
 const { status } = require("http-status");
+const mongoose = require('mongoose');
 const ApiError = require('../utils/ApiError');
 const { Member, TrainerRequest, Trainer, TrainingSession, WorkoutPlan } = require('../models');
+const { isTrainerAvailable } = require('../utils/trainerAvailibility');
 const moment = require('moment');
 /**
  * Get all members assigned to a trainer
@@ -9,14 +11,49 @@ const moment = require('moment');
  */
 const getTrainerMembers = async (trainerId) => {
   // Fetch trainer profile to ensure trainer exists
-  const trainer = await Trainer.findOne({ userId: trainerId });
+  const trainer = await Trainer.findOne({ _id: trainerId });
   if (!trainer) {
-    throw new ApiError(status.NOT_FOUND, 'Trainer not found');
+    throw new ApiError(httpStatus.NOT_FOUND, 'Trainer not found');
   }
 
-  const members = await Member.find({ currentTrainerId: trainerId }).populate('userId', 'name email');
+  const members = await Member.find({ currentTrainerId: trainerId }).populate('userId', 'firstName lastName email profilephoto');
 
-  return members;
+  const result = await Promise.all(
+    members.map(async (member, index) => {
+      const memberId = member._id;
+
+      const acceptedRequest = await TrainerRequest.findOne({
+        memberId,
+        trainerId,
+        status: 'accepted',
+      }).sort({ updatedAt: -1 });
+
+      const joined = acceptedRequest?.updatedAt ?? member.createdAt;
+  
+      const [totalSessions, completedSessions] = await Promise.all([
+        TrainingSession.countDocuments({ memberId, trainerId }),
+        TrainingSession.countDocuments({ memberId, trainerId, status: 'completed' }),
+      ]);
+
+      const progress = totalSessions > 0 ? Math.round((completedSessions / totalSessions) * 100) : 0;
+
+      return {
+        id: index + 1,
+        _id: member._id,
+        user: {
+          name: `${member.userId.firstName} ${member.userId.lastName}`,
+          email: member.userId.email,
+          avatar: member.userId.profilephoto || 'https://i.pravatar.cc/150?img=1',
+        },
+        age: member.age,
+        joined,
+        progress,
+      };
+    })
+  );
+
+  return result;
+
 };
 
 const getPendingMemberRequests = async (trainerId) => {
@@ -25,7 +62,7 @@ const getPendingMemberRequests = async (trainerId) => {
     select: 'age height weight userId',
     populate: {
       path: 'userId',
-      select: 'firstName lastName email',
+      select: 'firstName lastName email profilePhoto',
     },
   })
     .lean();
@@ -71,7 +108,7 @@ const respondToMemberRequest = async (trainerId, requestId, action, alternativeT
     if (!alternativeTrainerId) {
       throw new ApiError(status.BAD_REQUEST, 'Alternative trainer ID is required for suggestion');
     }
-    const alternativeTrainer = await Trainer.findOne({ userId: alternativeTrainerId });
+    const alternativeTrainer = await Trainer.findOne({ _id: alternativeTrainerId });
     if (!alternativeTrainer) {
       throw new ApiError(status.NOT_FOUND, 'Alternative trainer not found');
     }
@@ -258,10 +295,10 @@ const respondToSessionRequest = async (trainerId, sessionId, action) => {
   if (session.status !== 'requested') {
     throw new ApiError(status.BAD_REQUEST, 'Session request is already processed');
   }
-
+   console.log("date::", session.scheduledDate);
   if (action === 'approve') {
     const isAvailable = await isTrainerAvailable(trainerId, new Date(session.scheduledDate), session.duration);
-    if (!isAvailable) throw new ApiError(status.BAD_REQUEST, 'Trainer not available at this time');
+    if (!isAvailable) throw new ApiError(status.BAD_REQUEST, 'You are not available at this time');
 
     session.status = 'scheduled';
 
@@ -290,7 +327,7 @@ const getPendingSessionRequests = async (trainerId) => {
       path: 'memberId',
       select: 'userId',
       populate: {
-        path: 'userId',
+        path: 'userId', // get full user details from member.userId
         select: 'firstName lastName email',
       },
     })
@@ -299,10 +336,16 @@ const getPendingSessionRequests = async (trainerId) => {
   return requests;
 };
 
-const getAllsessions = async (trainerId) => {
-  const requests = await TrainingSession.find({
-    trainerId,
-  }).populate('workoutPlanId', 'refId')
+const getAllsessions = async (trainerId, type = null) => {
+  const today = new Date();
+  let query = { trainerId };
+
+  if (type === 'upcoming') {
+    query.scheduledDate = { $gte: today };
+  }
+
+  const requests = await TrainingSession.find(query)
+    .populate('workoutPlanId', 'refId')
     .populate({
       path: 'memberId',
       select: 'userId',
@@ -310,7 +353,9 @@ const getAllsessions = async (trainerId) => {
         path: 'userId',
         select: 'firstName lastName email',
       },
-    }).sort({ scheduledDate: 1 });
+    })
+    .sort({ scheduledDate: 1 })
+    .limit(type === 'upcoming' ? 10 : 0);
 
   return requests;
 };
@@ -390,6 +435,88 @@ const updateAvailability = async (trainerId, availabilityByDateArray, availabili
   return trainer;
 };
 
+const getAllTrainers = async () => {
+  const trainers = await Trainer.find({}).populate('userId', 'firstName lastName email profilePhoto');
+  return trainers;
+};
+
+const getMyAvailability = async (trainerId) => {
+  const trainer = await Trainer.findById(trainerId);
+  if (!trainer) {
+    throw new ApiError(status.NOT_FOUND, 'Trainer not found');
+  }
+  const availability = {};
+  for (const entry of trainer.availabilityByDate || []) {
+    availability[entry.date] = entry.slots.map(({ startTime, endTime }) => ({ startTime, endTime }));
+  }
+
+  const recurringAvailability = {};
+  for (const entry of trainer.availabilityRecurring || []) {
+    recurringAvailability[entry.dayOfWeek] = entry.slots.map(({ startTime, endTime }) => ({ startTime, endTime }));
+  }
+  return { availability, recurringAvailability };
+};
+
+const getTrainerStats = async (trainerId) => {
+
+  const connectedMembersCount = await Member.countDocuments({ currentTrainerId: trainerId });
+
+  const pendingConnectionsCount = await TrainerRequest.countDocuments({ trainerId, status: 'pending' });
+
+  const pendingRequestsCount = await TrainingSession.countDocuments({
+    trainerId,
+    status: { $in: ['requested', 'pending'] },
+  });
+
+  const result = await TrainingSession.aggregate([
+    { $match: { trainerId, status: 'completed' } },
+    { $group: { _id: null, totalHours: { $sum: '$actualHoursSpent' } } },
+  ]);
+
+  const totalHoursSpent = result.length > 0 ? result[0].totalHours : 0;
+
+  return {
+    connectedMembers: connectedMembersCount,
+    pendingConnections: pendingConnectionsCount,
+    pendingRequests: pendingRequestsCount,
+    totalHoursSpent,
+  };
+
+};
+
+const getTrainerSessionStats = async (trainerId) => {
+  const sessions = await TrainingSession.aggregate([
+    {
+      $match: {
+        trainerId: new mongoose.Types.ObjectId(trainerId),
+        status: 'pending',
+      },
+    },
+    {
+      $group: {
+        _id: {
+          $dateToString: { format: "%Y-%m-%d", date: "$scheduledDate" },
+        },
+        sessions: { $sum: 1 },
+      },
+    },
+    {
+      $sort: { _id: 1 },
+    },
+    {
+      $project: {
+        _id: 0,
+        date: '$_id',
+        sessions: 1,
+      },
+    },
+  ]);
+
+  return sessions;
+};
+
+
+
 module.exports = {
   getTrainerMembers,
   getPendingMemberRequests,
@@ -404,5 +531,9 @@ module.exports = {
   cancelSession,
   getSessionsByStatus,
   getAllsessions,
-  updateAvailability
+  updateAvailability,
+  getAllTrainers,
+  getMyAvailability,
+  getTrainerStats,
+  getTrainerSessionStats
 };

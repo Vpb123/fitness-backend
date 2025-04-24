@@ -115,7 +115,14 @@ const getUserProfileById = async (userId) => {
   }
 
   if (!profile) throw new ApiError(status.NOT_FOUND, 'Profile not found');
-  
+  if (!user.profilePhoto || user.profilePhoto.trim() === '') {
+    const first = user.firstName;
+    const last = user.lastName || '';
+    user.profilePhoto = `https://ui-avatars.com/api/?name=${encodeURIComponent(
+      `${first} ${last}`
+    )}&background=random`;
+  }
+
   return { user, profile };
 };
 

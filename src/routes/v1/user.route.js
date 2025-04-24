@@ -3,7 +3,9 @@ const auth = require('../../middlewares/auth');
 const validate = require('../../middlewares/validate');
 const userValidation = require('../../validations/user.validation');
 const userController = require('../../controllers/user.controller');
-
+const multer = require('multer');
+const storage = multer.memoryStorage();
+const upload = multer({ storage: storage });
 const router = express.Router();
 
 // router
@@ -18,6 +20,6 @@ const router = express.Router();
 //   .delete(auth('manageUsers'), validate(userValidation.deleteUser), userController.deleteUser);
 
 router.get('/profile/', auth(), userController.getUserProfile);
-
+router.post('/profile-photo', auth(), upload.single('profilePhoto'), userController.uploadProfilePhoto);
 
 module.exports = router;

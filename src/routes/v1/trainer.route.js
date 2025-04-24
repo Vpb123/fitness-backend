@@ -20,5 +20,8 @@ router.get('/sessions', auth('trainer'), trainerController.getSessionsByStatus);
 router.put('/update-availability', auth('trainer'), trainerController.updateAvailability);
 router.get('/mysessions', auth('trainer'), trainerController.getAllSessionsByTrainerId);
 router.get('/:trainerId/availability', auth(), trainerController.getTrainerAvailability);
-
+router.get('/', auth('trainer'), trainerController.getAllTrainers);
+router.get('/availability', auth('trainer'), trainerController.getMyAvailability);
+router.get('/stats', auth('trainer'), trainerController.getTrainerStats);
+router.get('/session-stats', auth('trainer'), trainerController.getTrainerSessionStats);
 module.exports = router;

@@ -22,7 +22,7 @@ const trainerRequestSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ['pending', 'accepted', 'rejected', 'suggested_alternative'],
+      enum: ['pending', 'accepted', 'rejected', 'suggested'],
       default: 'pending',
     },
     alternativeTrainerId: {

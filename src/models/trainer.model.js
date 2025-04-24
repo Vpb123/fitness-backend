@@ -19,11 +19,13 @@ const trainerSchema = new mongoose.Schema(
       type: [String],
       enum: ['Weight Loss', 'Strength Training', 'Yoga', 'Cardio', 'Endurance', 'Flexibility', 'General Fitness'],
       required: true,
+      default:'Endurance',
     },
     about: {
       type: String,
       trim: true,
       maxlength: 500, 
+      default:" I specialize in strength training and have a passion for helping individuals achieve their fitness goals. My approach is personalized, focusing on each client\'s unique needs and aspirations.",
     },
     availabilityRecurring: [
       {

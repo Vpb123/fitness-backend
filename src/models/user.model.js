@@ -28,7 +28,7 @@ const userSchema = mongoose.Schema(
     },
     profilePhoto: {
       type: String,
-      default: 'https://ui-avatars.com/api/?name=John+Doe&background=random',
+      default: '',
     },
     password: {
       type: String,
