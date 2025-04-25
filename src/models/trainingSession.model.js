@@ -59,6 +59,10 @@ const trainingSessionSchema = new mongoose.Schema(
       type: Date,
       default: Date.now,
     },
+    attended: {
+      type: Boolean,
+      default: false,
+    },
   },
   { timestamps: true } 
 );

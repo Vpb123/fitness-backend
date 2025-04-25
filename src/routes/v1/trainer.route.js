@@ -16,7 +16,7 @@ router.post('/respond-session/:sessionId', auth('trainer'), trainerController.re
 router.get('/pending-sessions', auth('trainer'), trainerController.getPendingSessionRequests);
 router.put('/complete-session/:sessionId', auth('trainer'), trainerController.completeSession);
 router.post('/cancel-session/:sessionId', auth('trainer'), trainerController.cancelSession);
-router.get('/sessions', auth('trainer'), trainerController.getSessionsByStatus);
+router.get('/sessions', auth('trainer'), trainerController.getSessionsByQuery);
 router.put('/update-availability', auth('trainer'), trainerController.updateAvailability);
 router.get('/mysessions', auth('trainer'), trainerController.getAllSessionsByTrainerId);
 router.get('/:trainerId/availability', auth(), trainerController.getTrainerAvailability);
@@ -24,4 +24,5 @@ router.get('/', auth('trainer'), trainerController.getAllTrainers);
 router.get('/availability', auth('trainer'), trainerController.getMyAvailability);
 router.get('/stats', auth('trainer'), trainerController.getTrainerStats);
 router.get('/session-stats', auth('trainer'), trainerController.getTrainerSessionStats);
+router.get('/workout-plan/:memberId', auth('trainer'), trainerController.getWorkoutPlan);
 module.exports = router;

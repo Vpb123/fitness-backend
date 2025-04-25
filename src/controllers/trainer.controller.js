@@ -1,4 +1,4 @@
-const {trainerService} = require('../services');
+const {trainerService, memberService} = require('../services');
 const catchAsync = require('../utils/catchAsync');
 const { status } = require('http-status');
 const ApiError = require('../utils/ApiError');
@@ -19,14 +19,14 @@ const getTrainerAvailability = catchAsync(async (req, res) => {
 
 const getTrainerMembers = catchAsync(async (req, res) => {
   const trainerId = req.user.roleId; 
-  const members = await trainerService.getTrainerMembers(trainerId);
+  const { memberId } = req.query;
+  const members = await trainerService.getTrainerMembers(trainerId, memberId && memberId !== "null" ? memberId : null);
   
   res.status(200).json({ members });
 });
 
 const getPendingMemberRequests = catchAsync(async (req, res) => {
   const trainerId = req.user.roleId; 
-  console.log("trainerId", trainerId);
   const requests = await trainerService.getPendingMemberRequests(trainerId);
   
   res.status(200).json({ requests });
@@ -80,7 +80,6 @@ const updateSession = catchAsync(async (req, res) => {
   const trainerId = req.user.roleId;
   const { sessionId } = req.params;
   const updateData = req.body;
-  console.log("updateData", updateData," sessionId", sessionId, "  trainerId", trainerId);
   const updatedSession = await trainerService.updateSession(trainerId, sessionId, updateData);
 
   res.status(200).json({
@@ -127,7 +126,7 @@ const getPendingSessionRequests = catchAsync(async (req, res) => {
 });
 
 const completeSession = catchAsync(async (req, res) => {
-  const trainerId = req.user.id;
+  const trainerId = req.user.roleId;
   const { sessionId } = req.params;
   const completionData = req.body;
 
@@ -151,12 +150,21 @@ const cancelSession = catchAsync(async (req, res) => {
   });
 });
 
-const getSessionsByStatus = catchAsync(async (req, res) => {
-  const trainerId = req.user.id;
-  const { status } = req.query;
+const getSessionsByQuery = catchAsync(async (req, res) => {
+  const trainerId = req.user.roleId;
+  const { status, memberId } = req.query;
 
-  const sessions = await trainerService.getSessionsByStatus(trainerId, status);
+  const filters = { trainerId };
 
+  if (status) {
+    filters.status = status;
+  }
+
+  if (memberId) {
+    filters.memberId = memberId;
+  }
+
+  const sessions = await trainerService.getSessionsByFilters(filters);
   res.status(200).json({ sessions });
 });
 
@@ -219,6 +227,13 @@ const getTrainerSessionStats = catchAsync(async (req, res) => {
   res.status(status.OK).json(data);
 });
 
+const getWorkoutPlan = catchAsync(async (req, res) => {
+  const { memberId }  = req.params;
+  const plan = await memberService.getWorkoutPlan(memberId);
+
+  res.status(status.OK).json({plan});
+});
+
 module.exports = {
   getTrainerMembers,
   getPendingMemberRequests,
@@ -231,12 +246,13 @@ module.exports = {
   getPendingSessionRequests,
   completeSession,
   cancelSession,
-  getSessionsByStatus,
+  getSessionsByQuery,
   updateAvailability,
   getTrainerAvailability,
   getAllSessionsByTrainerId,
   getAllTrainers,
   getMyAvailability,
   getTrainerStats,
-  getTrainerSessionStats
+  getTrainerSessionStats,
+  getWorkoutPlan
 };

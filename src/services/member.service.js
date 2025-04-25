@@ -1,6 +1,7 @@
 const { Trainer , TrainerRequest, Member, WorkoutPlan, TrainingSession } = require('../models/');
 const { status } = require('http-status')
 const moment = require("moment")
+const dayjs = require('dayjs');
 const ApiError = require('../utils/ApiError');
 /**
  * Get paginated list of trainers with filters
@@ -210,26 +211,38 @@ const cancelSession = async (memberId, sessionId) => {
   };
 
 const getWorkoutPlan = async (memberId) => {
-    const workoutPlan = await WorkoutPlan.findOne({
-      memberId,
-      status: 'active',
-    })
-      .populate('trainerId', 'userId')
-      .lean();
-  
-    if (!workoutPlan) {
-      throw new ApiError(status.NOT_FOUND, 'No active workout plan found');
-    }
-  
-    const completedCount = await TrainingSession.countDocuments({
-      workoutPlanId: workoutPlan._id,
-      status: 'completed',
-    });
-  
+  const workoutPlan = await WorkoutPlan.findOne({
+    memberId,
+    status: 'active',
+  })
+    .populate('trainerId', 'userId')
+    .lean();
+
+  if (!workoutPlan) {
+    throw new ApiError(status.NOT_FOUND, 'No active workout plan found');
+  }
+
+  const completedCount = await TrainingSession.countDocuments({
+    workoutPlanId: workoutPlan._id,
+    status: 'completed',
+  });
+
+  const baseStartDate = dayjs(workoutPlan.startDate);
+
+  const enhancedWeeklySessions = workoutPlan.weeklySessions.map((session) => {
+    const sessionStartDate = baseStartDate.add(session.weekNumber - 1, 'week').startOf('week');
     return {
-      ...workoutPlan,
-      completedSessions: completedCount,
+      ...session,
+      startDate: sessionStartDate.toISOString(), 
     };
+  });
+
+  return {
+    ...workoutPlan,
+    completedSessions: completedCount,
+    weeklySessions: enhancedWeeklySessions,
+  };
+
   };
   
   const leaveTrainerReview = async (memberId, reviewData) => {

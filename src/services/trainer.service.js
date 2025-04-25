@@ -2,26 +2,32 @@ const { status } = require("http-status");
 const mongoose = require('mongoose');
 const ApiError = require('../utils/ApiError');
 const { Member, TrainerRequest, Trainer, TrainingSession, WorkoutPlan } = require('../models');
-const { isTrainerAvailable } = require('../utils/trainerAvailibility');
+const { isTrainerAvailable, getTrainerAvailabilityForDate } = require('../utils/trainerAvailibility');
 const moment = require('moment');
 /**
  * Get all members assigned to a trainer
  * @param {ObjectId} trainerId - Trainer's ID
  * @returns {Promise<Array>}
  */
-const getTrainerMembers = async (trainerId) => {
-  // Fetch trainer profile to ensure trainer exists
+const getTrainerMembers = async (trainerId, memberId=null) => {
+  
   const trainer = await Trainer.findOne({ _id: trainerId });
   if (!trainer) {
     throw new ApiError(httpStatus.NOT_FOUND, 'Trainer not found');
   }
+  let members=[]
+  if(memberId !== null){
+     const member = await Member.findOne({ _id: memberId }).populate('userId', 'firstName lastName email profilephoto');
+     members.push(member)
 
-  const members = await Member.find({ currentTrainerId: trainerId }).populate('userId', 'firstName lastName email profilephoto');
+  }else{
+     members = await Member.find({ currentTrainerId: trainerId }).populate('userId', 'firstName lastName email profilephoto');
+  }
 
   const result = await Promise.all(
     members.map(async (member, index) => {
       const memberId = member._id;
-
+      const workoutPlan = await WorkoutPlan.findOne({ memberId, trainerId }).select('_id').lean();
       const acceptedRequest = await TrainerRequest.findOne({
         memberId,
         trainerId,
@@ -40,12 +46,15 @@ const getTrainerMembers = async (trainerId) => {
       return {
         id: index + 1,
         _id: member._id,
+        workoutPlanId: workoutPlan?._id || null,
         user: {
           name: `${member.userId.firstName} ${member.userId.lastName}`,
           email: member.userId.email,
           avatar: member.userId.profilephoto || 'https://i.pravatar.cc/150?img=1',
         },
         age: member.age,
+        weight: member.weight,
+        height: member.height,
         joined,
         progress,
       };
@@ -124,18 +133,15 @@ const respondToMemberRequest = async (trainerId, requestId, action, alternativeT
 };
 
 const createWorkoutPlan = async (trainerId, memberId, workoutData) => {
-
   const trainer = await Trainer.findOne({ _id: trainerId });
   if (!trainer) {
     throw new ApiError(status.NOT_FOUND, 'Trainer not found');
   }
 
-
   const member = await Member.findById(memberId);
   if (!member) {
     throw new ApiError(status.NOT_FOUND, 'Member not found');
   }
-
 
   if (member.currentTrainerId?.toString() !== trainerId.toString()) {
     throw new ApiError(status.FORBIDDEN, 'You are not assigned to this member');
@@ -155,7 +161,6 @@ const createWorkoutPlan = async (trainerId, memberId, workoutData) => {
     throw new ApiError(status.BAD_REQUEST, 'Weekly session count must match total weeks in the plan');
   }
 
-
   const workoutPlan = await WorkoutPlan.create({
     trainerId,
     memberId,
@@ -166,15 +171,13 @@ const createWorkoutPlan = async (trainerId, memberId, workoutData) => {
     status: 'active',
   });
 
-
   const sessionsToCreate = [];
   const baseStartDate = moment(workoutData.startDate);
 
-  workoutData.weeklySessions.forEach((week, index) => {
-    const weekStartDate = baseStartDate.clone().add(index, 'weeks');
+  for (const [index, week] of workoutData.weeklySessions.entries()) {
+    const weekStart = baseStartDate.clone().add(index, 'weeks');
 
     if (week.scheduleNow && Array.isArray(week.sessions)) {
-      // Validate session count matches
       if (week.sessions.length !== week.sessionCount) {
         throw new ApiError(
           status.BAD_REQUEST,
@@ -196,22 +199,42 @@ const createWorkoutPlan = async (trainerId, memberId, workoutData) => {
         });
       });
     } else {
-      // Schedule later — placeholder sessions with weekStartDate
-      for (let i = 0; i < week.sessionCount; i++) {
-        sessionsToCreate.push({
-          memberId,
-          trainerId,
-          workoutPlanId: workoutPlan._id,
-          weekNumber: index + 1,
-          scheduledDate: weekStartDate.toDate(), // ✅ here’s your new line
-          duration: 60,
-          note: '',
-          sessionType: 'TBD',
-          status: 'pending',
-        });
+  
+      let scheduledCount = 0;
+      let checkDate = weekStart.clone();
+
+      while (scheduledCount < week.sessionCount && checkDate.isBefore(weekStart.clone().add(7, 'days'))) {
+        const availableSlots = await getTrainerAvailabilityForDate(trainerId, checkDate.toISOString());
+
+        if (availableSlots.length > 0) {
+          const slot = availableSlots[0];
+          const scheduledDate = moment(`${checkDate.format('YYYY-MM-DD')}T${slot.startTime}`).toDate();
+
+          sessionsToCreate.push({
+            memberId,
+            trainerId,
+            workoutPlanId: workoutPlan._id,
+            weekNumber: index + 1,
+            scheduledDate,
+            duration: 1,
+            note: '',
+            sessionType: 'TBD',
+            status: 'pending',
+          });
+          scheduledCount++;
+        }
+
+        checkDate.add(1, 'day');
+      }
+
+      if (scheduledCount < week.sessionCount) {
+        throw new ApiError(
+          status.BAD_REQUEST,
+          `Not enough available slots found to schedule ${week.sessionCount} sessions for week ${index + 1}`
+        );
       }
     }
-  });
+  }
 
   await TrainingSession.insertMany(sessionsToCreate);
 
@@ -375,7 +398,7 @@ const completeSession = async (trainerId, sessionId, completionData) => {
   session.status = 'completed';
   session.actualHoursSpent = completionData.actualHoursSpent || session.duration;
   session.notes = completionData.notes || '';
-
+  session.attended = completionData.attended || false;
   await session.save();
   return session;
 };
@@ -396,19 +419,18 @@ const cancelSession = async (trainerId, sessionId) => {
   return session;
 };
 
-const getSessionsByStatus = async (trainerId, status) => {
-  if (!['completed', 'scheduled'].includes(status)) {
-    throw new ApiError(status.BAD_REQUEST, 'Invalid session status');
-  }
-
-  const sessions = await TrainingSession.find({
-    trainerId,
-    status,
-  })
-    .populate('memberId', 'name email') // Get member details
+const getSessionsByFilters = async (filters) => {
+  return await TrainingSession.find(filters)
+    .populate('workoutPlanId', 'refId')
+    .populate({
+      path: 'memberId',
+      select: 'userId',
+      populate: {
+        path: 'userId',
+        select: 'firstName lastName email',
+      },
+    })
     .sort({ scheduledDate: 1 });
-
-  return sessions;
 };
 
 const updateAvailability = async (trainerId, availabilityByDateArray, availabilityRecurringArray) => {
@@ -469,7 +491,7 @@ const getTrainerStats = async (trainerId) => {
   });
 
   const result = await TrainingSession.aggregate([
-    { $match: { trainerId, status: 'completed' } },
+    { $match: { trainerId: new mongoose.Types.ObjectId(trainerId), status: 'completed' } },
     { $group: { _id: null, totalHours: { $sum: '$actualHoursSpent' } } },
   ]);
 
@@ -529,7 +551,7 @@ module.exports = {
   getPendingSessionRequests,
   completeSession,
   cancelSession,
-  getSessionsByStatus,
+  getSessionsByFilters,
   getAllsessions,
   updateAvailability,
   getAllTrainers,
