@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const validator = require('validator');
 const { toJSON, paginate } = require('./plugins');
 const bcrypt = require('bcryptjs');
+const { default: status } = require('http-status');
 
 /**
  * User Schema
@@ -63,6 +64,10 @@ const userSchema = mongoose.Schema(
       enum: ['local', 'google', 'facebook'],
       default: 'local',
     },
+    isApproved:{
+      type: Boolean,
+      default: false
+    }
   },
   {
     timestamps: true,

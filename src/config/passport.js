@@ -3,7 +3,7 @@ const { Strategy: GoogleStrategy } = require('passport-google-oauth20');
 const { Strategy: FacebookStrategy } = require('passport-facebook');
 const config = require('./config');
 const { tokenTypes } = require('./tokens');
-const User = require('../models/user.model');
+const {User, Member, Trainer} = require('../models');
 const passport = require('passport');
 
 const jwtOptions = {
@@ -54,6 +54,11 @@ passport.use(
             isEmailVerified: true,
             dob:new Date('01-01-2000'),
           });
+          if (user.role === 'member') {
+            await Member.create({ userId: user.id, subscriptionStatus: 'active' });
+          } else if (user.role === 'trainer') {
+            await Trainer.create({ userId: user.id });
+          }
         }
         return done(null, user);
       } catch (error) {
@@ -93,6 +98,11 @@ passport.use(
             isEmailVerified: true,
             dob:new Date('01-01-2000'),
           });
+          if (user.role === 'member') {
+            await Member.create({ userId: user.id, subscriptionStatus: 'active' });
+          } else if (user.role === 'trainer') {
+            await Trainer.create({ userId: user.id });
+          }
         }
         return done(null, user);
       } catch (error) {
