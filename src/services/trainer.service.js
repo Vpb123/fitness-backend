@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const ApiError = require('../utils/ApiError');
 const { Member, TrainerRequest, Trainer, TrainingSession, WorkoutPlan } = require('../models');
 const { isTrainerAvailable, getTrainerAvailabilityForDate } = require('../utils/trainerAvailibility');
-const { notificationService } = require('../services');
+const { createNotification } = require('./notification.service');
 const moment = require('moment');
 /**
  * Get all members assigned to a trainer
@@ -14,7 +14,7 @@ const getTrainerMembers = async (trainerId, memberId=null) => {
   
   const trainer = await Trainer.findOne({ _id: trainerId });
   if (!trainer) {
-    throw new ApiError(httpStatus.NOT_FOUND, 'Trainer not found');
+    throw new ApiError(status.NOT_FOUND, 'Trainer not found');
   }
   let members=[]
   if(memberId !== null){
@@ -138,7 +138,7 @@ const respondToMemberRequest = async (trainerId, requestId, action, alternativeT
 
   await request.save();
 
-  await notificationService.createNotification({
+  await createNotification({
     userId: request.memberId.userId,
     message,
     type: 'trainer_request_response',
@@ -254,7 +254,7 @@ const createWorkoutPlan = async (trainerId, memberId, workoutData) => {
   await TrainingSession.insertMany(sessionsToCreate);
   const trainerName = `${trainer.userId.firstName} ${trainer.userId.lastName}`;
 
-  await notificationService.createNotification({
+  await createNotification({
     userId: member.userId, 
     message: `Your workout plan has been created by ${trainerName}.`,
     type: 'workout_plan_created',
@@ -279,7 +279,7 @@ const deleteSession = async (trainerId, sessionId) => {
     throw new ApiError(status.FORBIDDEN, 'You are not authorized to delete this session');
   }
 
-  await notificationService.createNotification({
+  await createNotification({
     userId: session.memberId.userId,
     message: `Your ${session.status} training session has been cancelled by your trainer.`,
     type: 'trainer_cancelled_session',
@@ -310,7 +310,7 @@ const updateSession = async (trainerId, sessionId, updateData) => {
   Object.assign(session, updateData);
   await session.save();
 
-  await notificationService.createNotification({
+  await createNotification({
     userId: session.memberId.userId,
     message: 'Your training session has been updated.',
     type: 'session_updated',
@@ -341,7 +341,7 @@ const createSession = async (trainerId, memberId, sessionData) => {
 
   const member = await Member.findById(memberId).select('userId');
 
-  await notificationService.createNotification({
+  await createNotification({
     userId: member.userId, 
     message: 'A new training session has been scheduled for you.',
     type: 'session_created',
@@ -377,7 +377,7 @@ const respondToSessionRequest = async (trainerId, sessionId, action) => {
 
   await session.save();
 
-  await notificationService.createNotification({
+  await createNotification({
     userId: session.memberId.userId, 
     message: `Your session request has been ${action === 'approve' ? 'approved' : 'cancelled'}.`,
     type: 'session_request_response',
@@ -466,7 +466,7 @@ const cancelSession = async (trainerId, sessionId) => {
   session.status = 'cancelled';
   await session.save();
 
-  await notificationService.createNotification({
+  await createNotification({
     userId: session.memberId.userId, 
     message: 'Your scheduled training session has been cancelled by your trainer.',
     type: 'trainer_cancelled_session',
