@@ -83,14 +83,25 @@ const deleteUser = catchAsync(async (req, res) => {
 });
 
 const getUserProfile = catchAsync(async (req, res) => {
-  console.log("req.user", req.user);
-  const  userId  = req.user._id;
 
+  const  userId  = req.user._id;
+  console.log("userId", userId);
   const { user, profile } = await userService.getUserProfileById(userId);
   
   res.status(status.OK).json({ user, profile });
 });
 
+const updateProfile = catchAsync(async (req, res) => {
+  const userId = req.user._id;
+  const updatedData = req.body; 
+
+  await userService.updateProfile(userId, updatedData);
+
+  res.status(200).json({
+    success: true,
+    message: 'Profile updated successfully',
+  });
+});
 
 module.exports = {
   createUser,
@@ -99,5 +110,6 @@ module.exports = {
   updateUser,
   deleteUser,
   getUserProfile,
-  uploadProfilePhoto
+  uploadProfilePhoto,
+  updateProfile
 };

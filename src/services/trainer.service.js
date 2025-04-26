@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const ApiError = require('../utils/ApiError');
 const { Member, TrainerRequest, Trainer, TrainingSession, WorkoutPlan } = require('../models');
 const { isTrainerAvailable, getTrainerAvailabilityForDate } = require('../utils/trainerAvailibility');
+const { notificationService } = require('../services');
 const moment = require('moment');
 /**
  * Get all members assigned to a trainer
@@ -93,14 +94,20 @@ const getPendingMemberRequests = async (trainerId) => {
  * @returns {Promise<Object>}
  */
 const respondToMemberRequest = async (trainerId, requestId, action, alternativeTrainerId = null) => {
-  const request = await TrainerRequest.findById(requestId);
+  const request = await TrainerRequest.findById(requestId).populate('memberId', 'userId');
   if (!request) {
     throw new ApiError(status.NOT_FOUND, 'Request not found');
   }
   if (request.status !== 'pending') {
     throw new ApiError(status.BAD_REQUEST, 'Request has already been processed');
   }
+  const trainer = await Trainer.findById(trainerId).populate('userId', 'firstName lastName');
+  if (!trainer) {
+    throw new ApiError(status.NOT_FOUND, 'Trainer not found');
+  }
+  const trainerName = `${trainer.userId.firstName} ${trainer.userId.lastName}`;
 
+  let message = '';
   if (action === 'accept') {
     await Member.findOneAndUpdate(
       { _id: request.memberId },
@@ -109,10 +116,10 @@ const respondToMemberRequest = async (trainerId, requestId, action, alternativeT
     );
 
     request.status = 'accepted';
-
+    message = `Your connection request has been accepted by ${trainerName}.`;
   } else if (action === 'reject') {
     request.status = 'rejected';
-
+    message = `Your trainer connection request has been rejected by ${trainerName}.`;
   } else if (action === 'suggest') {
     if (!alternativeTrainerId) {
       throw new ApiError(status.BAD_REQUEST, 'Alternative trainer ID is required for suggestion');
@@ -123,22 +130,30 @@ const respondToMemberRequest = async (trainerId, requestId, action, alternativeT
     }
     request.status = 'suggested';
     request.alternativeTrainerId = alternativeTrainerId;
-
+    const suggestedTrainerName = `${alternativeTrainer.userId.firstName} ${alternativeTrainer.userId.lastName}`;
+    message = `${trainerName} suggested your trainer connection request to ${suggestedTrainerName}.`;
   } else {
     throw new ApiError(status.BAD_REQUEST, 'Invalid action');
   }
 
   await request.save();
+
+  await notificationService.createNotification({
+    userId: request.memberId.userId,
+    message,
+    type: 'trainer_request_response',
+  });
+
   return request;
 };
 
 const createWorkoutPlan = async (trainerId, memberId, workoutData) => {
-  const trainer = await Trainer.findOne({ _id: trainerId });
+  const trainer = await Trainer.findOne({ _id: trainerId }).populate('userId', 'firstName lastName');
   if (!trainer) {
     throw new ApiError(status.NOT_FOUND, 'Trainer not found');
   }
 
-  const member = await Member.findById(memberId);
+  const member = await Member.findById(memberId).select('userId', 'currentTrainerId')
   if (!member) {
     throw new ApiError(status.NOT_FOUND, 'Member not found');
   }
@@ -237,6 +252,13 @@ const createWorkoutPlan = async (trainerId, memberId, workoutData) => {
   }
 
   await TrainingSession.insertMany(sessionsToCreate);
+  const trainerName = `${trainer.userId.firstName} ${trainer.userId.lastName}`;
+
+  await notificationService.createNotification({
+    userId: member.userId, 
+    message: `Your workout plan has been created by ${trainerName}.`,
+    type: 'workout_plan_created',
+  });
 
   return { workoutPlan, sessions: sessionsToCreate };
 };
@@ -249,7 +271,7 @@ const createWorkoutPlan = async (trainerId, memberId, workoutData) => {
 * @returns {Promise<Object>}
 */
 const deleteSession = async (trainerId, sessionId) => {
-  const session = await TrainingSession.findById(sessionId);
+  const session = await TrainingSession.findById(sessionId).populate('memberId', 'userId');;
   if (!session) {
     throw new ApiError(status.NOT_FOUND, 'Session not found');
   }
@@ -257,12 +279,19 @@ const deleteSession = async (trainerId, sessionId) => {
     throw new ApiError(status.FORBIDDEN, 'You are not authorized to delete this session');
   }
 
+  await notificationService.createNotification({
+    userId: session.memberId.userId,
+    message: `Your ${session.status} training session has been cancelled by your trainer.`,
+    type: 'trainer_cancelled_session',
+  });
+
   await TrainingSession.findByIdAndDelete(sessionId);
   return { message: 'Session deleted successfully' };
 };
 
 const updateSession = async (trainerId, sessionId, updateData) => {
-  const session = await TrainingSession.findById(sessionId);
+  const session = await TrainingSession.findById(sessionId).populate('memberId', 'userId');
+
   if (!session) {
     throw new ApiError(status.NOT_FOUND, 'Session not found');
   }
@@ -280,6 +309,12 @@ const updateSession = async (trainerId, sessionId, updateData) => {
 
   Object.assign(session, updateData);
   await session.save();
+
+  await notificationService.createNotification({
+    userId: session.memberId.userId,
+    message: 'Your training session has been updated.',
+    type: 'session_updated',
+  });
 
   return session;
 };
@@ -304,11 +339,19 @@ const createSession = async (trainerId, memberId, sessionData) => {
     duration,
   });
 
+  const member = await Member.findById(memberId).select('userId');
+
+  await notificationService.createNotification({
+    userId: member.userId, 
+    message: 'A new training session has been scheduled for you.',
+    type: 'session_created',
+  });
+
   return newSession;
 };
 
 const respondToSessionRequest = async (trainerId, sessionId, action) => {
-  const session = await TrainingSession.findById(sessionId);
+  const session = await TrainingSession.findById(sessionId).populate('memberId', 'userId'); ;
   if (!session) {
     throw new ApiError(status.NOT_FOUND, 'Session not found');
   }
@@ -333,6 +376,13 @@ const respondToSessionRequest = async (trainerId, sessionId, action) => {
   }
 
   await session.save();
+
+  await notificationService.createNotification({
+    userId: session.memberId.userId, 
+    message: `Your session request has been ${action === 'approve' ? 'approved' : 'cancelled'}.`,
+    type: 'session_request_response',
+  });
+
   return session;
 };
 
@@ -404,7 +454,7 @@ const completeSession = async (trainerId, sessionId, completionData) => {
 };
 
 const cancelSession = async (trainerId, sessionId) => {
-  const session = await TrainingSession.findById(sessionId);
+  const session = await TrainingSession.findById(sessionId).populate('memberId', 'userId');;
   if (!session) {
     throw new ApiError(status.NOT_FOUND, 'Session not found');
   }
@@ -415,6 +465,12 @@ const cancelSession = async (trainerId, sessionId) => {
 
   session.status = 'cancelled';
   await session.save();
+
+  await notificationService.createNotification({
+    userId: session.memberId.userId, 
+    message: 'Your scheduled training session has been cancelled by your trainer.',
+    type: 'trainer_cancelled_session',
+  });
 
   return session;
 };
@@ -536,8 +592,6 @@ const getTrainerSessionStats = async (trainerId) => {
 
   return sessions;
 };
-
-
 
 module.exports = {
   getTrainerMembers,

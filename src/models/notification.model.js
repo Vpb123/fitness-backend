@@ -6,7 +6,7 @@ const notificationSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
       required: true,
-      index: true, // Fast lookups for notifications per user
+      index: true, 
     },
     message: {
       type: String,
@@ -16,7 +16,27 @@ const notificationSchema = new mongoose.Schema(
     },
     type: {
       type: String,
-      enum: ['trainer_request', 'session_request', 'subscription_update', 'trainer_switch', 'general'],
+      enum: [
+       
+        'trainer_request_response', 
+        'workout_plan_created',     
+        'session_updated',           
+        'session_created',         
+        'session_request_response',
+        'trainer_cancelled_session', 
+      
+        'trainer_connection_request',
+        'session_request',             
+        'member_cancelled_session',  
+        'pending_session',            
+        'trainer_switched',           
+
+        'account_approved',            
+        'training_center_assigned',     
+        'approval_requested',          
+    
+        'general',                      
+      ],
       required: true,
     },
     status: {
@@ -29,10 +49,9 @@ const notificationSchema = new mongoose.Schema(
       default: Date.now,
     },
   },
-  { timestamps: true } // Automatically adds createdAt and updatedAt fields
+  { timestamps: true } 
 );
 
-// Indexing to retrieve unread notifications quickly
 notificationSchema.index({ userId: 1, status: 1 });
 
 const Notification = mongoose.model('Notification', notificationSchema);

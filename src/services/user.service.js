@@ -107,9 +107,25 @@ const getUserProfileById = async (userId) => {
 
   let profile = null;
   if (user.role === 'member') {
-    profile = await Member.findOne({ userId }).populate('currentTrainerId');
+    profile = await Member.findOne({ userId }).populate({
+      path: 'currentTrainerId',
+      populate: {
+        path: 'userId',
+        select: 'firstName lastName email profilePhoto',
+      },
+    });
   } else if (user.role === 'trainer') {
-    profile = await Trainer.findOne({ userId });
+    profile = await Trainer.findOne({ userId }).select('-availabilityRecurring -availabilityByDate').populate([
+      {
+        path: 'reviews',     
+        select: 'rating comment createdAt',  
+        options: { sort: { createdAt: -1 } }, 
+      },
+      {
+        path: 'trainingCenter',
+        select: 'name address contactNumber facilities',
+      },
+    ]);;
   } else if (user.role === 'admin') {
     profile = await Admin.findOne({ userId });
   }
@@ -126,6 +142,34 @@ const getUserProfileById = async (userId) => {
   return { user, profile };
 };
 
+const updateProfile = async (userId, updatedData) => {
+    const user = await User.findById(userId);
+    if (!user) {
+      throw new Error('User not found');
+    }
+  
+    user.firstName = updatedData.user.firstName || user.firstName;
+    user.lastName = updatedData.user.lastName || user.lastName;
+    user.email = updatedData.user.email || user.email;
+  
+    await user.save();
+  
+    if (user.role === 'trainer') {
+      const trainerProfile = await Trainer.findOne({ userId: userId });
+      if (!trainerProfile) {
+        throw new Error('Trainer profile not found');
+      }
+  
+      trainerProfile.age = updatedData.profile.age || trainerProfile.age;
+      trainerProfile.about = updatedData.profile.about || trainerProfile.about;
+      trainerProfile.experienceYears = updatedData.profile.experienceYears || trainerProfile.experienceYears;
+      trainerProfile.specializations = updatedData.profile.specializations || trainerProfile.specializations;
+  
+      await trainerProfile.save();
+    }
+  
+    return { message: 'Profile updated successfully' };
+  };
 
 module.exports = {
   createUser,
@@ -134,5 +178,6 @@ module.exports = {
   getUserByEmail,
   updateUserById,
   deleteUserById,
-  getUserProfileById
+  getUserProfileById,
+  updateProfile
 };

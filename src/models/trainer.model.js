@@ -13,13 +13,17 @@ const trainerSchema = new mongoose.Schema(
     experienceYears: {
       type: Number,
      default: 0,
-      min: 0, // Prevents negative values
+      min: 0, 
+    },
+    age: {
+      type: Number,
+     default: 25,
     },
     specializations: {
       type: [String],
       enum: ['Weight Loss', 'Strength Training', 'Yoga', 'Cardio', 'Endurance', 'Flexibility', 'General Fitness'],
       required: true,
-      default:'Endurance',
+      default:['Endurance'],
     },
     about: {
       type: String,
@@ -68,13 +72,26 @@ const trainerSchema = new mongoose.Schema(
     },
   },
   {
-    timestamps: true, // Adds createdAt and updatedAt fields
+    timestamps: true, 
   }
 );
 
+trainerSchema.virtual('reviews', {
+  ref: 'TrainerReview',           
+  localField: '_id',                
+  foreignField: 'trainerId',        
+});
+
+
+trainerSchema.virtual('trainingCenter', {
+  ref: 'TrainingCenter',           
+  localField: '_id',              
+  foreignField: 'trainers',          
+});
+
 trainerSchema.plugin(toJSON);
 trainerSchema.plugin(paginate);
-// Ensure only one trainer profile per user
+
 trainerSchema.index({ userId: 1 }, { unique: true });
 
 const Trainer = mongoose.model('Trainer', trainerSchema);

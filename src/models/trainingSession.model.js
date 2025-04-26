@@ -20,7 +20,7 @@ const trainingSessionSchema = new mongoose.Schema(
       default: null,
     },
     weekNumber: {
-      type: Number, // New field: Ensures session is linked to a workout plan week
+      type: Number, 
       required: function () { return this.workoutPlanId !== null; },
     },
     status: {

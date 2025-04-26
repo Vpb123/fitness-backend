@@ -18,7 +18,7 @@ const trainerReviewSchema = new mongoose.Schema(
       type: Number,
       required: true,
       min: 1,
-      max: 5, // Standard 5-star rating system
+      max: 5, 
     },
     comment: {
       type: String,

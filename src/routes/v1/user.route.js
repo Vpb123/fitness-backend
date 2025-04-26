@@ -8,18 +8,13 @@ const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 const router = express.Router();
 
-// router
-//   .route('/')
-//   .post(auth('manageUsers'), validate(userValidation.createUser), userController.createUser)
-//   .get(auth('getUsers'), validate(userValidation.getUsers), userController.getUsers);
 
-// router
-//   .route('/:userId')
-//   .get(auth('getUsers'), validate(userValidation.getUser), userController.getUser)
-//   .patch(auth('manageUsers'), validate(userValidation.updateUser), userController.updateUser)
-//   .delete(auth('manageUsers'), validate(userValidation.deleteUser), userController.deleteUser);
+// router.get('/:userId',auth(), validate(userValidation.getUser), userController.getUser)
+// router.patch('/:userId',auth(), validate(userValidation.updateUser), userController.updateUser)
+// router.delete('/:userId',auth(), validate(userValidation.deleteUser), userController.deleteUser);
 
-router.get('/profile/', auth(), userController.getUserProfile);
+router.put('/profile',auth(), userController.updateProfile);
+router.get('/profile', auth(), userController.getUserProfile);
 router.post('/profile-photo', auth(), upload.single('profilePhoto'), userController.uploadProfilePhoto);
 
 module.exports = router;
