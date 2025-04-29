@@ -32,13 +32,13 @@ const sendTrainerRequest = catchAsync(async (req, res) => {
 });
 
 const getSessionHistory = catchAsync(async (req, res) => {
-  const memberId = req.user.id;
+  const memberId = req.user.roleId;
   const sessions = await memberService.getSessionHistory(memberId);
   res.status(200).json({ sessions });
 });
 
 const getUpcomingSessions = catchAsync(async (req, res) => {
-  const memberId = req.user.id;
+  const memberId = req.user.roleId;
   const status = req.query.status || 'all';
 
   const sessions = await memberService.getUpcomingSessions(memberId, status);
@@ -46,7 +46,7 @@ const getUpcomingSessions = catchAsync(async (req, res) => {
 });
 
 const cancelSession = catchAsync(async (req, res) => {
-  const memberId = req.user.id;
+  const memberId = req.user.roleId;
   const { sessionId } = req.params;
 
   const session = await memberService.cancelSession(memberId, sessionId);
@@ -54,7 +54,7 @@ const cancelSession = catchAsync(async (req, res) => {
 });
 
 const getSessionProgress = catchAsync(async (req, res) => {
-  const memberId = req.user.id;
+  const memberId = req.user.roleId;
   const { period } = req.query;
 
   const result = await memberService.getSessionProgress(memberId, period);
@@ -72,7 +72,7 @@ const getWorkoutPlan = catchAsync(async (req, res) => {
 });
 
 const leaveTrainerReview = catchAsync(async (req, res) => {
-  const memberId = req.user.id;
+  const memberId = req.user.roleId;
   const review = await memberService.leaveTrainerReview(memberId, req.body);
 
   res.status(201).json({
