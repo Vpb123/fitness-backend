@@ -2,7 +2,7 @@ const {trainerService, memberService} = require('../services');
 const catchAsync = require('../utils/catchAsync');
 const { status } = require('http-status');
 const ApiError = require('../utils/ApiError');
-const { getTrainerAvailabilityForDate } = require('../utils/trainerAvailibility');
+const { getTrainerAvailabilityForDate, getTrainerAvailabilityForRange } = require('../utils/trainerAvailibility');
 
 const getTrainerAvailability = catchAsync(async (req, res) => {
   const trainerId = req.params.trainerId;
@@ -16,6 +16,17 @@ const getTrainerAvailability = catchAsync(async (req, res) => {
   res.status(200).json({ slots });
 });
 
+const getTrainerAvailabilityByRange = catchAsync(async (req, res) => {
+  const trainerId = req.params.trainerId;
+  const { startDate, endDate } = req.query;
+
+  if (!startDate || !endDate) {
+    throw new ApiError(status.BAD_REQUEST, 'Start date and end date are required');
+  }
+
+  const availability = await getTrainerAvailabilityForRange(trainerId, startDate, endDate);
+  res.status(200).json({ availability });
+});
 
 const getTrainerMembers = catchAsync(async (req, res) => {
   const trainerId = req.user.roleId; 
@@ -179,6 +190,7 @@ const getAllSessionsByTrainerId = catchAsync(async (req, res) => {
 
 
 const updateAvailability = catchAsync(async (req, res) => {
+  console.log("user", req.user);
   const trainerId = req.user.roleId;
   const { availabilityByDate, availabilityRecurring } = req.body;
 
@@ -254,5 +266,6 @@ module.exports = {
   getMyAvailability,
   getTrainerStats,
   getTrainerSessionStats,
-  getWorkoutPlan
+  getWorkoutPlan,
+  getTrainerAvailabilityByRange
 };

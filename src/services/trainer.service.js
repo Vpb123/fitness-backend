@@ -490,7 +490,7 @@ const getSessionsByFilters = async (filters) => {
 };
 
 const updateAvailability = async (trainerId, availabilityByDateArray, availabilityRecurringArray) => {
-
+  console.log("trainerId", trainerId);
   const trainer = await Trainer.findOneAndUpdate(
     { _id: trainerId },
     {

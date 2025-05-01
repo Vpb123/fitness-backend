@@ -109,7 +109,73 @@ const getTrainerAvailabilityForDate = async (trainerId, date) => {
   return slots;
 };
 
+const getTrainerAvailabilityForRange = async (trainerId, startDate, endDate) => {
+  const trainer = await Trainer.findOne({ _id: trainerId });
+  if (!trainer) return [];
+
+  const sessions = await TrainingSession.find({
+    trainerId,
+    status: 'scheduled',
+    scheduledDate: {
+      $gte: new Date(startDate),
+      $lte: new Date(endDate),
+    },
+  });
+
+  const bookedSlotsMap = {};
+  for (const session of sessions) {
+    const dateStr = dayjs(session.scheduledDate).format('YYYY-MM-DD');
+    const start = dayjs(session.scheduledDate);
+    const end = start.add(session.duration, 'hour');
+
+    if (!bookedSlotsMap[dateStr]) {
+      bookedSlotsMap[dateStr] = [];
+    }
+
+    bookedSlotsMap[dateStr].push({ start, end });
+  }
+
+  const availability = [];
+  let current = dayjs(startDate);
+
+  while (current.isSameOrBefore(endDate, 'day')) {
+    const dateStr = current.format('YYYY-MM-DD');
+    const dayOfWeek = current.format('dddd');
+
+    const dateSpecific = trainer.availabilityByDate.find(e => e.date === dateStr);
+    const recurring = trainer.availabilityRecurring.find(e => e.dayOfWeek === dayOfWeek);
+    const rawSlots = dateSpecific?.slots || recurring?.slots || [];
+
+    const daySlots = [];
+
+    for (const slot of rawSlots) {
+      const slotStart = dayjs(`${dateStr}T${slot.startTime}`);
+      const slotEnd = dayjs(`${dateStr}T${slot.endTime}`);
+      const overlaps = (bookedSlotsMap[dateStr] || []).some(({ start, end }) =>
+        isTimeOverlapping(slotStart, slotEnd, start, end)
+      );
+
+      if (!overlaps) {
+        daySlots.push({
+          date: dateStr,
+          startTime: slot.startTime,
+          endTime: slot.endTime,
+        });
+      }
+    }
+
+    if (daySlots.length) {
+      availability.push({ date: dateStr, slots: daySlots });
+    }
+
+    current = current.add(1, 'day');
+  }
+
+  return availability;
+};
+
 module.exports = {
   isTrainerAvailable,
-  getTrainerAvailabilityForDate
+  getTrainerAvailabilityForDate,
+  getTrainerAvailabilityForRange
 };

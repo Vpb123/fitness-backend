@@ -2,6 +2,9 @@ const { status } = require("http-status");
 const catchAsync = require('../utils/catchAsync');
 const { authService, userService, tokenService, emailService } = require('../services');
 const ApiError = require('../utils/ApiError');
+const { Trainer } = require('../models');
+const { Member } = require('../models');
+const { Admin } = require("../models");
 
 const register = catchAsync(async (req, res) => {
   const user = await userService.createUser(req.body);
@@ -59,6 +62,17 @@ const verifyEmail = catchAsync(async (req, res) => {
 
 const socialLogin = catchAsync(async (req, res) => {
   const user = req.user;
+  if (user.role === 'trainer') {
+      const trainer = await Trainer.findOne({ userId: user._id });
+      user.roleId = trainer?._id;     
+      console.log("trainer", trainer);
+  } else if (user.role === 'member') {
+      const member = await Member.findOne({ userId: user._id });
+      user.roleId = member?._id;
+  } else if (user.role === 'admin') {
+      const admin = await Admin.findOne({ userId: user._id });
+      user.roleId = admin?._id;
+  }
   const tokens = await tokenService.generateAuthTokens(user);
   const frontendURL = `${process.env.FRONTEND_URL}/auth/social-auth-callback?token=${tokens.access.token}&user=${encodeURIComponent(JSON.stringify(user))}`;
   res.redirect(frontendURL);
