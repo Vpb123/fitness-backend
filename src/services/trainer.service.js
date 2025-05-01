@@ -153,7 +153,7 @@ const createWorkoutPlan = async (trainerId, memberId, workoutData) => {
     throw new ApiError(status.NOT_FOUND, 'Trainer not found');
   }
 
-  const member = await Member.findById(memberId).select('userId', 'currentTrainerId')
+  const member = await Member.findById(memberId).select('userId currentTrainerId')
   if (!member) {
     throw new ApiError(status.NOT_FOUND, 'Member not found');
   }
@@ -432,7 +432,7 @@ const getPendingSessionRequests = async (trainerId) => {
       path: 'memberId',
       select: 'userId',
       populate: {
-        path: 'userId', // get full user details from member.userId
+        path: 'userId', 
         select: 'firstName lastName email',
       },
     })
@@ -599,7 +599,7 @@ const getTrainerSessionStats = async (trainerId) => {
     {
       $match: {
         trainerId: new mongoose.Types.ObjectId(trainerId),
-        status: 'pending',
+        status: 'completed',
       },
     },
     {
