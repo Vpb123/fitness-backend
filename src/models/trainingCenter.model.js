@@ -6,7 +6,7 @@ const trainingCenterSchema = new mongoose.Schema(
       type: String,
       required: true,
       trim: true,
-      unique: true, // Prevents duplicate training centers
+      unique: true, 
     },
     address: {
       street: { type: String, required: true, trim: true },
@@ -31,6 +31,25 @@ const trainingCenterSchema = new mongoose.Schema(
       default: [],
       enum: ['Gym', 'Swimming Pool', 'Yoga Hall', 'Sauna', 'Personal Training', 'Group Classes'],
     },
+    openingTimes: [
+      {
+        day: {
+          type: String,
+          required: true,
+          enum: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
+        },
+        enabled: {
+          type: Boolean,
+          default: false,
+        },
+        startTime: {
+          type: String,
+        },
+        endTime: {
+          type: String,
+        },
+      }
+    ],
     createdAt: {
       type: Date,
       default: Date.now,

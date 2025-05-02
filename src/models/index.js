@@ -9,5 +9,5 @@ module.exports.TrainingSession = require("./trainingSession.model");
 module.exports.WorkoutPlan = require("./workoutPlan.model");
 module.exports.subscription = require("./subscription.model");
 module.exports.notification = require("./notification.model");
-module.exports.trainingCenter = require("./trainingCenter.model");
+module.exports.TrainingCenter = require("./trainingCenter.model");
 

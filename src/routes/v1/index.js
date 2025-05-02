@@ -5,6 +5,7 @@ const config = require('../../config/config');
 const memberRoute = require('./member.route');
 const trainerRoute = require('./trainer.route');
 const notificationRoute = require('./notification.route')
+const adminRoute = require('./admin.route')
 const router = express.Router();
 
 const defaultRoutes = [
@@ -27,6 +28,10 @@ const defaultRoutes = [
   {
     path:'/notifications',
     route: notificationRoute
+  },
+  {
+    path:'/admin',
+    route: adminRoute
   }
   
 ];

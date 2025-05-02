@@ -11,7 +11,7 @@ const register = {
       'date.base': 'Date of Birth must be a valid date',
       'date.less': 'Date of Birth cannot be in the future',
     }),
-    role: Joi.string().valid('member', 'trainer').required(),
+    role: Joi.string().valid('member', 'trainer', 'admin').required(),
   }),
 };
 

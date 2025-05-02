@@ -9,7 +9,7 @@ const { Admin } = require("../models");
 const register = catchAsync(async (req, res) => {
   const user = await userService.createUser(req.body);
   const otp = await tokenService.saveOTP(user.id);
-  await emailService.sendSignupOTPEmail(user.email, otp); // Use signup OTP email
+  await emailService.sendSignupOTPEmail(user.email, otp); 
   res.status(status.CREATED).json({ message: 'OTP sent to email for verification' });
 });
 

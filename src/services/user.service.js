@@ -19,6 +19,8 @@ const createUser = async (userBody) => {
     await Member.create({ userId: user.id, subscriptionStatus: 'active' });
   } else if (user.role === 'trainer') {
     await Trainer.create({ userId: user.id });
+  }else if(user.role === 'admin'){
+    await Admin.create({ userId: user.id})
   }
 
   return user;
@@ -122,7 +124,7 @@ const getUserProfileById = async (userId) => {
         options: { sort: { createdAt: -1 } }, 
       },
       {
-        path: 'trainingCenter',
+        path: 'TrainingCenter',
         select: 'name address contactNumber facilities',
       },
     ]);;
