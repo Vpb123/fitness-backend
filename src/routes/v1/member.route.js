@@ -16,4 +16,6 @@ router.get('/workout-plan/', auth('member'), memberController.getWorkoutPlan);
 router.post('/reviews', auth('member'), memberController.leaveTrainerReview);
 router.get('/getpendingsessions', auth('member'), memberController.getPendingSessionsByWeek);
 router.post('/request-pending-session', auth('member'), memberController.requestPendingSession);
+router.get('/get-details', auth('member'), memberController.getMemeberDetails);
+
 module.exports = router;

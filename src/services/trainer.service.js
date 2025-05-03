@@ -153,7 +153,7 @@ const createWorkoutPlan = async (trainerId, memberId, workoutData) => {
     throw new ApiError(status.NOT_FOUND, 'Trainer not found');
   }
 
-  const member = await Member.findById(memberId).select('userId', 'currentTrainerId')
+  const member = await Member.findById(memberId).populate('userId').select('currentTrainerId');
   if (!member) {
     throw new ApiError(status.NOT_FOUND, 'Member not found');
   }

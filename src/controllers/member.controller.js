@@ -15,6 +15,8 @@ const getAvailableTrainers = catchAsync(async (req, res) => {
   const options = {
     page: parseInt(page),
     limit: parseInt(limit),
+    populate: 'userId',
+    sort: { rating: -1 },
   };
 
   const result = await memberService.getAvailableTrainers(filters, options);
@@ -109,6 +111,16 @@ const requestPendingSession = catchAsync(async (req, res) => {
   });
 });
 
+const getMemeberDetails = catchAsync(async (req, res) => {
+  const memberId = req.user.roleId;
+  const memberDetails = await memberService.getMemberDetails(memberId);
+
+  res.status(status.OK).json({
+    message: 'Member details fetched successfully',
+    memberDetails,
+  });
+});
+
 
 
 module.exports = {
@@ -122,5 +134,6 @@ module.exports = {
   getWorkoutPlan,
   leaveTrainerReview,
   getPendingSessionsByWeek,
-  requestPendingSession
+  requestPendingSession,
+  getMemeberDetails
 }
