@@ -10,19 +10,19 @@ const moment = require('moment');
  * @param {ObjectId} trainerId - Trainer's ID
  * @returns {Promise<Array>}
  */
-const getTrainerMembers = async (trainerId, memberId=null) => {
-  
+const getTrainerMembers = async (trainerId, memberId = null) => {
+
   const trainer = await Trainer.findOne({ _id: trainerId });
   if (!trainer) {
     throw new ApiError(status.NOT_FOUND, 'Trainer not found');
   }
-  let members=[]
-  if(memberId !== null){
-     const member = await Member.findOne({ _id: memberId }).populate('userId', 'firstName lastName email profilephoto');
-     members.push(member)
+  let members = []
+  if (memberId !== null) {
+    const member = await Member.findOne({ _id: memberId }).populate('userId', 'firstName lastName email profilephoto');
+    members.push(member)
 
-  }else{
-     members = await Member.find({ currentTrainerId: trainerId }).populate('userId', 'firstName lastName email profilephoto');
+  } else {
+    members = await Member.find({ currentTrainerId: trainerId }).populate('userId', 'firstName lastName email profilephoto');
   }
 
   const result = await Promise.all(
@@ -36,7 +36,7 @@ const getTrainerMembers = async (trainerId, memberId=null) => {
       }).sort({ updatedAt: -1 });
 
       const joined = acceptedRequest?.updatedAt ?? member.createdAt;
-  
+
       const [totalSessions, completedSessions] = await Promise.all([
         TrainingSession.countDocuments({ memberId, trainerId }),
         TrainingSession.countDocuments({ memberId, trainerId, status: 'completed' }),
@@ -209,45 +209,77 @@ const createWorkoutPlan = async (trainerId, memberId, workoutData) => {
           scheduledDate: sesh.date,
           duration: sesh.duration,
           note: sesh.note,
-          sessionType: 'TBD',
+          sessionType: sesh.sessionType,
           status: 'scheduled',
         });
       });
     } else {
-  
+
       let scheduledCount = 0;
       let checkDate = weekStart.clone();
+      let forceSchedule = false;
 
-      while (scheduledCount < week.sessionCount && checkDate.isBefore(weekStart.clone().add(7, 'days'))) {
-        const availableSlots = await getTrainerAvailabilityForDate(trainerId, checkDate.toISOString());
+      while (scheduledCount < week.sessionCount) {
+        let slot;
+        if (!forceSchedule) {
+          const availableSlots = await getTrainerAvailabilityForDate(
+            trainerId,
+            checkDate.format("YYYY-MM-DD") 
+          );
+          if (availableSlots.length > 0) {
+            slot = availableSlots[0];
+          }
+        }
 
-        if (availableSlots.length > 0) {
-          const slot = availableSlots[0];
-          const scheduledDate = moment(`${checkDate.format('YYYY-MM-DD')}T${slot.startTime}`).toDate();
+        if (slot) {
+          const scheduledDate = moment(
+            `${checkDate.format("YYYY-MM-DD")} ${slot.startTime}`,
+            "YYYY-MM-DD HH:mm"
+          );
 
           sessionsToCreate.push({
             memberId,
             trainerId,
             workoutPlanId: workoutPlan._id,
             weekNumber: index + 1,
-            scheduledDate,
+            scheduledDate: scheduledDate.format("YYYY-MM-DD HH:mm"),
             duration: 1,
             note: '',
             sessionType: 'TBD',
             status: 'pending',
           });
+
           scheduledCount++;
+          checkDate.add(1, 'day');
+        } else {
+          if (!forceSchedule && checkDate.isSameOrAfter(weekStart.clone().add(6, 'days'))) {
+            forceSchedule = true;
+            checkDate = weekStart.clone();
+            continue;
+          }
+
+          if (forceSchedule) {
+            const fallbackDate = checkDate.clone().hour(0).minute(0);
+            sessionsToCreate.push({
+              memberId,
+              trainerId,
+              workoutPlanId: workoutPlan._id,
+              weekNumber: index + 1,
+              scheduledDate: fallbackDate.format("YYYY-MM-DD HH:mm"),
+              duration: 1,
+              note: '',
+              sessionType: week.sessionType,
+              status: 'pending',
+            });
+
+            scheduledCount++;
+            checkDate.add(1, 'day');
+          } else {
+            checkDate.add(1, 'day');
+          }
         }
-
-        checkDate.add(1, 'day');
       }
 
-      if (scheduledCount < week.sessionCount) {
-        throw new ApiError(
-          status.BAD_REQUEST,
-          `Not enough available slots found to schedule ${week.sessionCount} sessions for week ${index + 1}`
-        );
-      }
     }
   }
 
@@ -255,7 +287,7 @@ const createWorkoutPlan = async (trainerId, memberId, workoutData) => {
   const trainerName = `${trainer.userId.firstName} ${trainer.userId.lastName}`;
 
   await createNotification({
-    userId: member.userId, 
+    userId: member.userId,
     message: `Your workout plan has been created by ${trainerName}.`,
     type: 'workout_plan_created',
   });
@@ -342,7 +374,7 @@ const createSession = async (trainerId, memberId, sessionData) => {
   const member = await Member.findById(memberId).select('userId');
 
   await createNotification({
-    userId: member.userId, 
+    userId: member.userId,
     message: 'A new training session has been scheduled for you.',
     type: 'session_created',
   });
@@ -351,7 +383,7 @@ const createSession = async (trainerId, memberId, sessionData) => {
 };
 
 const respondToSessionRequest = async (trainerId, sessionId, action) => {
-  const session = await TrainingSession.findById(sessionId).populate('memberId', 'userId'); ;
+  const session = await TrainingSession.findById(sessionId).populate('memberId', 'userId');;
   if (!session) {
     throw new ApiError(status.NOT_FOUND, 'Session not found');
   }
@@ -361,7 +393,7 @@ const respondToSessionRequest = async (trainerId, sessionId, action) => {
   if (session.status !== 'requested') {
     throw new ApiError(status.BAD_REQUEST, 'Session request is already processed');
   }
-   console.log("date::", session.scheduledDate);
+  console.log("date::", session.scheduledDate);
   if (action === 'approve') {
     const isAvailable = await isTrainerAvailable(trainerId, new Date(session.scheduledDate), session.duration);
     if (!isAvailable) throw new ApiError(status.BAD_REQUEST, 'You are not available at this time');
@@ -378,7 +410,7 @@ const respondToSessionRequest = async (trainerId, sessionId, action) => {
   await session.save();
 
   await createNotification({
-    userId: session.memberId.userId, 
+    userId: session.memberId.userId,
     message: `Your session request has been ${action === 'approve' ? 'approved' : 'cancelled'}.`,
     type: 'session_request_response',
   });
@@ -400,7 +432,7 @@ const getPendingSessionRequests = async (trainerId) => {
       path: 'memberId',
       select: 'userId',
       populate: {
-        path: 'userId', // get full user details from member.userId
+        path: 'userId', 
         select: 'firstName lastName email',
       },
     })
@@ -467,7 +499,7 @@ const cancelSession = async (trainerId, sessionId) => {
   await session.save();
 
   await createNotification({
-    userId: session.memberId.userId, 
+    userId: session.memberId.userId,
     message: 'Your scheduled training session has been cancelled by your trainer.',
     type: 'trainer_cancelled_session',
   });
@@ -490,7 +522,7 @@ const getSessionsByFilters = async (filters) => {
 };
 
 const updateAvailability = async (trainerId, availabilityByDateArray, availabilityRecurringArray) => {
-
+  console.log("trainerId", trainerId);
   const trainer = await Trainer.findOneAndUpdate(
     { _id: trainerId },
     {
@@ -567,7 +599,7 @@ const getTrainerSessionStats = async (trainerId) => {
     {
       $match: {
         trainerId: new mongoose.Types.ObjectId(trainerId),
-        status: 'pending',
+        status: 'completed',
       },
     },
     {

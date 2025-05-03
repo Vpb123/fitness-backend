@@ -25,4 +25,5 @@ router.get('/availability', auth('trainer'), trainerController.getMyAvailability
 router.get('/stats', auth('trainer'), trainerController.getTrainerStats);
 router.get('/session-stats', auth('trainer'), trainerController.getTrainerSessionStats);
 router.get('/workout-plan/:memberId', auth('trainer'), trainerController.getWorkoutPlan);
+router.get( '/:trainerId/availability-range', auth(),  trainerController.getTrainerAvailabilityByRange);
 module.exports = router;

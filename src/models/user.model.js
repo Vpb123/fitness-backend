@@ -67,6 +67,15 @@ const userSchema = mongoose.Schema(
     isApproved:{
       type: Boolean,
       default: false
+    },
+    isDeleted:{
+      type: Boolean,
+      default: false
+    },
+    address:{
+      type:String,
+      trim:true,
+      default:"224 Portswood Rd, Portswood, Southampton SO17 2LB"
     }
   },
   {

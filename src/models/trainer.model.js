@@ -83,12 +83,6 @@ trainerSchema.virtual('reviews', {
 });
 
 
-trainerSchema.virtual('trainingCenter', {
-  ref: 'TrainingCenter',           
-  localField: '_id',              
-  foreignField: 'trainers',          
-});
-
 trainerSchema.plugin(toJSON);
 trainerSchema.plugin(paginate);
 

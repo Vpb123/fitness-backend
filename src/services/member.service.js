@@ -119,6 +119,7 @@ const requestTrainingSession = async (memberId, sessionData) => {
 };
 
 const getSessionHistory = async (memberId) => {
+  console.log(memberId);
   return TrainingSession.find({
     memberId,
     status: 'completed',
@@ -130,7 +131,7 @@ const getSessionHistory = async (memberId) => {
 const getUpcomingSessions = async (memberId, statusFilter) => {
   const query = {
     memberId,
-    status: { $in: ['requested', 'scheduled'] },
+    status: { $in: ['requested', 'scheduled', 'pending'] },
   };
 
   if (statusFilter && statusFilter !== 'all') {

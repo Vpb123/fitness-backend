@@ -18,8 +18,8 @@ const notificationSchema = new mongoose.Schema(
       type: String,
       enum: [
        
-        'trainer_request_response', 
-        'workout_plan_created',     
+        'request_accepted', 
+        'plan_created',     
         'session_updated',           
         'session_created',         
         'session_request_response',
