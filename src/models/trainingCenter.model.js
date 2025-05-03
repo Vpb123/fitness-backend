@@ -9,11 +9,14 @@ const trainingCenterSchema = new mongoose.Schema(
       unique: true, 
     },
     address: {
-      street: { type: String, required: true, trim: true },
-      city: { type: String, required: true, trim: true },
-      state: { type: String, required: true, trim: true },
-      country: { type: String, required: true, trim: true },
-      postalCode: { type: String, required: true, trim: true },
+      type: String,
+      required: true,
+      trim: true
+    },
+    description:{
+      type: String,
+      trim: true,
+      default:"This training has all facilities"
     },
     contactNumber: {
       type: String,
@@ -42,14 +45,13 @@ const trainingCenterSchema = new mongoose.Schema(
           type: Boolean,
           default: false,
         },
-        startTime: {
-          type: String,
-        },
-        endTime: {
-          type: String,
-        },
       }
     ],
+    status:{
+      type:String,
+      enum:['closed', 'open'],
+      default:'open'
+    },
     createdAt: {
       type: Date,
       default: Date.now,
@@ -62,7 +64,6 @@ const trainingCenterSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// Index for quick lookups
 trainingCenterSchema.index({ name: 1, 'address.city': 1 });
 
 const TrainingCenter = mongoose.model('TrainingCenter', trainingCenterSchema);

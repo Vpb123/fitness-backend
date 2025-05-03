@@ -54,6 +54,17 @@ const getStats = catchAsync(async (req, res) => {
     const newCenter = await adminService.createTrainingCenter(req.body);
     res.status(201).json({ message: 'Training center created successfully', center: newCenter });
   });
+
+  const getMonthlyGrowthChartData = async (req, res) => {
+    try {
+      const stats = await adminService.getMonthlyGrowthStats();
+      res.status(200).json({ message: 'Monthly growth data fetched successfully', data: stats });
+    } catch (error) {
+      console.error('Error fetching monthly growth stats:', error);
+      res.status(500).json({ message: 'Failed to fetch growth data' });
+    }
+  };
+  
   
 module.exports = {
   getAllUsers,
@@ -62,5 +73,6 @@ module.exports = {
   getStats,
   assignTrainer,
   addTrainingCenter,
-  editTrainingCenter
+  editTrainingCenter,
+  getMonthlyGrowthChartData
 };

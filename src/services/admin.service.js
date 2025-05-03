@@ -7,42 +7,40 @@ const getAllUsers = async () => {
 
   const existingUsers = [];
   const requestedUsers = [];
-  let index=1
+  let index = 1;
+
   for (const user of users) {
-    const enrichedUser = { ...user, name: `${user.firstName} ${user.lastName}`, id:index};
+    const enrichedUser = {
+      ...user,
+      name: `${user.firstName} ${user.lastName}`,
+      id: index,
+    };
 
     if (user.role === 'member') {
       const member = await Member.findOne({ userId: user._id }).populate('currentTrainerId', 'userId');
       if (member) {
-        enrichedUser.memberDetails = {
-          age: member.age,
-          height: member.height,
-          weight: member.weight,
-        };
-
+        enrichedUser.age =  member.age
+        enrichedUser.weight = member.weight
+        enrichedUser.height = member.height 
         if (member.currentTrainerId) {
-          // Get trainer user name
           const trainerUser = await User.findById(member.currentTrainerId.userId);
           enrichedUser.currentTrainerName = trainerUser
             ? `${trainerUser.firstName} ${trainerUser.lastName}`
             : null;
 
-          // Get training center of trainer
-          const center = await TrainingCenter.findOne({ trainers: member.currentTrainerId._id }).select('name');
+          const center = await TrainingCenter.findOne({ trainers: member.currentTrainerId.userId }).select('name');
           enrichedUser.trainingCenterName = center?.name || null;
         }
       }
     }
 
     if (user.role === 'trainer') {
-      const trainer = await Trainer.findOne({ userId: user._id })
-        .populate('trainingCenter', 'name');
-
+      const trainer = await Trainer.findOne({ userId: user._id });
       if (trainer) {
-        const memberCount = await Member.countDocuments({ currentTrainerId: trainer._id });
-        enrichedUser.memberCount = memberCount;
-        enrichedUser.specialty = trainer.specialty || '';
-        enrichedUser.trainingCenterName = trainer.trainingCenter?.name || null;
+        enrichedUser.memberCount = await Member.countDocuments({ currentTrainerId: trainer._id });
+        enrichedUser.speciality = trainer.specializations.join(', ') || '';
+        const center = await TrainingCenter.findOne({ trainers: user._id }).select('name');
+        enrichedUser.trainingCenterName = center?.name || null;
       }
     }
 
@@ -51,11 +49,66 @@ const getAllUsers = async () => {
     } else {
       requestedUsers.push(enrichedUser);
     }
-    index+=1;
+
+    index += 1;
   }
 
   return { existingUsers, requestedUsers };
 };
+
+
+const getMonthlyGrowthStats = async () => {
+  const startOfYear = moment().startOf('year').toDate();
+  const endOfYear = moment().endOf('year').toDate();
+
+  const baseMatch = {
+    createdAt: { $gte: startOfYear, $lte: endOfYear },
+    isDeleted: { $ne: true },
+    isApproved: true,
+  };
+
+  const [members, trainers] = await Promise.all([
+    User.aggregate([
+      { $match: { ...baseMatch, role: 'member' } },
+      {
+        $group: {
+          _id: { $month: '$createdAt' },
+          count: { $sum: 1 },
+        },
+      },
+    ]),
+    User.aggregate([
+      { $match: { ...baseMatch, role: 'trainer' } },
+      {
+        $group: {
+          _id: { $month: '$createdAt' },
+          count: { $sum: 1 },
+        },
+      },
+    ]),
+  ]);
+
+  // Initialize counts for 12 months
+  const membersData = Array(12).fill(0);
+  const trainersData = Array(12).fill(0);
+
+  members.forEach((m) => {
+    membersData[m._id - 1] = m.count;
+  });
+  trainers.forEach((t) => {
+    trainersData[t._id - 1] = t.count;
+  });
+
+  return {
+    months: [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December',
+    ],
+    members: membersData,
+    trainers: trainersData,
+  };
+};
+
 
 
 const approveOrDeclineUser = async (userId, action) => {
@@ -123,8 +176,9 @@ const getAdminStats = async () => {
 const getAllTrainingCenters = async () => {
     const centers = await TrainingCenter.find().populate('trainers', 'userId').lean();
   
-    return centers.map(center => ({
+    return centers.map((center, index) => ({
       ...center,
+      id:index+1,
       trainerCount: center.trainers?.length || 0,
     }));
   };
@@ -156,5 +210,6 @@ module.exports = {
   assignTrainerToCenter,
   getAllTrainingCenters,
   updateTrainingCenter,
-  createTrainingCenter
+  createTrainingCenter,
+  getMonthlyGrowthStats
 };

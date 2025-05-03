@@ -12,5 +12,6 @@ router.get('/training-centers', auth('admin'), adminController.getTrainingCenter
 router.post('/training-centers', auth('admin'), adminController.addTrainingCenter);
 router.put('/training-centers/:centerId', auth('admin'), adminController.editTrainingCenter);
 router.post('/training-centers/assign-trainer', auth('admin'), adminController.assignTrainer);
+router.get('/monthly-growth', auth('admin') , adminController.getMonthlyGrowthChartData);
 
 module.exports = router;
