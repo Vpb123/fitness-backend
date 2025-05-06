@@ -13,8 +13,7 @@ const markAsRead = catchAsync(async (req, res) => {
 
 
 const clearAllForUser = catchAsync(async (req, res) => {
-  const userId = req.user._id; 
-
+  const userId = req.user.id; 
   const result = await notificationService.clearAllForUser(userId);
   res.status(status.OK).send(result);
 });
