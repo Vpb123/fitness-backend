@@ -166,6 +166,12 @@ const updateProfile = async (userId, updatedData) => {
     user.firstName = updatedData.user.firstName || user.firstName;
     user.lastName = updatedData.user.lastName || user.lastName;
     user.email = updatedData.user.email || user.email;
+
+    if(user.role === 'member'){
+      user.address = updatedData.user.address || user.address;
+      user.dob = updatedData.user.dob || user.dob
+      user.profilePhoto = updatedData.user.profilePhoto || user.profilePhoto
+    }
   
     await user.save();
   
@@ -181,6 +187,21 @@ const updateProfile = async (userId, updatedData) => {
       trainerProfile.specializations = updatedData.profile.specializations || trainerProfile.specializations;
   
       await trainerProfile.save();
+    }
+
+    if(user.role === 'member'){
+      const memberProfile = await Member.findOne({userId: userId});
+      if (!memberProfile){
+        throw new Error('Member profile not found');
+      }
+
+      memberProfile.age = updatedData.profile.age || memberProfile.age;
+      memberProfile.weight = updatedData.profile.weight || memberProfile.weight;
+      memberProfile.height = updatedData.profile.height || memberProfile.height;
+      memberProfile.medicalCondition = updatedData.profile.medicalCondition || memberProfile.medicalCondition;
+      memberProfile.subscriptionStatus = updatedData.profile.subscriptionStatus || memberProfile.subscriptionStatus;
+      
+      await memberProfile.save()
     }
   
     return { message: 'Profile updated successfully' };

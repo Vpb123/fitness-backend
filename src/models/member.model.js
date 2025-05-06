@@ -30,6 +30,10 @@ const memberSchema = new mongoose.Schema(
       ref: 'Trainer',
       default: null, 
     },
+    medicalCondition: {
+      type: Boolean,
+      default: false
+    },
     previousTrainerIds: [
         {
           trainerId: { type: mongoose.Schema.Types.ObjectId, ref: 'Trainer' },
