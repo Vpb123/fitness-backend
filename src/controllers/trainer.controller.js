@@ -75,9 +75,8 @@ const createWorkoutPlan = catchAsync(async (req, res) => {
 });
 
 const createSession = catchAsync(async (req, res) => {
-  const trainerId = req.user.id;
-  const { memberId } = req.params;
-  const sessionData = req.body;
+  const trainerId = req.user.roleId;
+  const { memberId, ...sessionData } = req.body;
 
   const session = await trainerService.createSession(trainerId, memberId, sessionData);
 

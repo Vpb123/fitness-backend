@@ -111,7 +111,7 @@ const requestTrainingSession = async (memberId, sessionData) => {
     scheduledDate: sessionDate.toDate(),
     duration: sessionData.duration,
     note: sessionData.note || '',
-    sessionType: 'TBD',
+    sessionType: sessionData.sessionType,
     status: 'requested',
   });
 

@@ -1,5 +1,5 @@
 const { status } = require("http-status");
-const { User } = require('../models');
+const { User , TrainingCenter, TrainerReview} = require('../models');
 const ApiError = require('../utils/ApiError');
 const { Trainer } = require('../models');
 const { Member } = require('../models');
@@ -55,7 +55,13 @@ const getUserById = async (id) => {
  * @returns {Promise<User>}
  */
 const getUserByEmail = async (email) => {
-  const user= await User.findOne({ email });
+  const user = await User.findOne({ email, provider: 'local' });
+  if(!user){
+    throw new ApiError(status.NOT_FOUND, 'User not found');
+  }
+  if(user.role!=='admin' && !user.isApproved){
+    throw new ApiError(status.NOT_FOUND, 'You are not approved by admin');
+  }
   if (user.role === 'trainer') {
     const trainer = await Trainer.findOne({ userId: user._id });
     user.roleId = trainer?._id;     
@@ -108,6 +114,9 @@ const getUserProfileById = async (userId) => {
   if (!user) throw new ApiError(status.NOT_FOUND, 'User not found');
 
   let profile = null;
+  let trainingCenter = null;
+  let reviews = [];
+
   if (user.role === 'member') {
     profile = await Member.findOne({ userId }).populate({
       path: 'currentTrainerId',
@@ -116,23 +125,26 @@ const getUserProfileById = async (userId) => {
         select: 'firstName lastName email profilePhoto',
       },
     });
+
   } else if (user.role === 'trainer') {
-    profile = await Trainer.findOne({ userId }).select('-availabilityRecurring -availabilityByDate').populate([
-      {
-        path: 'reviews',     
-        select: 'rating comment createdAt',  
-        options: { sort: { createdAt: -1 } }, 
-      },
-      {
-        path: 'TrainingCenter',
-        select: 'name address contactNumber facilities',
-      },
-    ]);;
+    profile = await Trainer.findOne({ userId }).select('-availabilityRecurring -availabilityByDate');
+
+    if (profile) {
+   
+      reviews = await TrainerReview.find({ trainerId: profile._id })
+        .select('rating comment createdAt')
+        .sort({ createdAt: -1 });
+
+      trainingCenter = await TrainingCenter.findOne({ trainerId: user._id })
+        .select('name address contactNumber facilities');
+    }
+
   } else if (user.role === 'admin') {
     profile = await Admin.findOne({ userId });
   }
 
   if (!profile) throw new ApiError(status.NOT_FOUND, 'Profile not found');
+
   if (!user.profilePhoto || user.profilePhoto.trim() === '') {
     const first = user.firstName;
     const last = user.lastName || '';
@@ -141,8 +153,9 @@ const getUserProfileById = async (userId) => {
     )}&background=random`;
   }
 
-  return { user, profile };
+  return { user, profile, trainingCenter, reviews };
 };
+
 
 const updateProfile = async (userId, updatedData) => {
     const user = await User.findById(userId);

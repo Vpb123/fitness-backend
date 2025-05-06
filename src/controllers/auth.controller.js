@@ -65,7 +65,7 @@ const socialLogin = catchAsync(async (req, res) => {
   if (user.role === 'trainer') {
       const trainer = await Trainer.findOne({ userId: user._id });
       user.roleId = trainer?._id;     
-      console.log("trainer", trainer);
+
   } else if (user.role === 'member') {
       const member = await Member.findOne({ userId: user._id });
       user.roleId = member?._id;

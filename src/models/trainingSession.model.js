@@ -21,7 +21,7 @@ const trainingSessionSchema = new mongoose.Schema(
     },
     weekNumber: {
       type: Number, 
-      required: function () { return this.workoutPlanId !== null; },
+      default: null,
     },
     status: {
       type: String,

@@ -354,13 +354,12 @@ const updateSession = async (trainerId, sessionId, updateData) => {
 const createSession = async (trainerId, memberId, sessionData) => {
   const { scheduledDate, duration, weekNumber } = sessionData;
 
-  // Check if trainer is available at the requested time
-  const available = await isTrainerAvailable(trainerId, new Date(newDate), newDuration);
+ 
+  const available = await isTrainerAvailable(trainerId, scheduledDate, duration);
   if (!available) {
     throw new ApiError(status.BAD_REQUEST, 'Trainer is not available at this time');
   }
 
-  // Create a session
   const newSession = await TrainingSession.create({
     memberId,
     trainerId,

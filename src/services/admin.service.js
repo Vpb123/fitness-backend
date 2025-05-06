@@ -147,7 +147,6 @@ const getAdminStats = async () => {
     TrainingCenter.countDocuments({ isDeleted: { $ne: true } }),
   ]);
 
-  // Previous week counts
   const [membersLastWeek, trainersLastWeek] = await Promise.all([
     User.countDocuments({
       role: 'member',
