@@ -18,22 +18,22 @@ const notificationSchema = new mongoose.Schema(
       type: String,
       enum: [
        
-        'request_accepted', 
+        'request_response', 
         'plan_created',     
         'session_updated',           
         'session_created',         
         'session_request_response',
         'trainer_cancelled_session', 
-      
-        'trainer_connection_request',
+        
+        'connection_request',
         'session_request',             
         'member_cancelled_session',  
         'pending_session',            
         'trainer_switched',           
 
         'account_approved',            
-        'training_center_assigned',     
-        'approval_requested',          
+        'center_assigned',     
+        'pending_approval',          
     
         'general',                      
       ],

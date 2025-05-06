@@ -7,7 +7,6 @@ module.exports.TrainerRequest = require("./trainerRequest.model");
 module.exports.TrainerReview = require("./trainerReview.model");
 module.exports.TrainingSession = require("./trainingSession.model");
 module.exports.WorkoutPlan = require("./workoutPlan.model");
-module.exports.subscription = require("./subscription.model");
 module.exports.notification = require("./notification.model");
 module.exports.TrainingCenter = require("./trainingCenter.model");
 

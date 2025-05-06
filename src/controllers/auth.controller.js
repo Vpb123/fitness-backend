@@ -5,6 +5,7 @@ const ApiError = require('../utils/ApiError');
 const { Trainer } = require('../models');
 const { Member } = require('../models');
 const { Admin } = require("../models");
+const { createNotification } = require('../services/notification.service');
 
 const register = catchAsync(async (req, res) => {
   const user = await userService.createUser(req.body);
@@ -27,10 +28,6 @@ const logout = catchAsync(async (req, res) => {
   res.status(status.NO_CONTENT).send();
 });
 
-const refreshTokens = catchAsync(async (req, res) => {
-  const tokens = await authService.refreshAuth(req.body.refreshToken);
-  res.send({ ...tokens });
-});
 
 const forgotPassword = catchAsync(async (req, res) => {
   const { email } = req.body;
@@ -49,19 +46,10 @@ const resetPassword = catchAsync(async (req, res) => {
   res.status(status.NO_CONTENT).send();
 });
 
-const sendVerificationEmail = catchAsync(async (req, res) => {
-  const verifyEmailToken = await tokenService.generateVerifyEmailToken(req.user);
-  await emailService.sendVerificationEmail(req.user.email, verifyEmailToken);
-  res.status(status.NO_CONTENT).send();
-});
-
-const verifyEmail = catchAsync(async (req, res) => {
-  await authService.verifyEmail(req.query.token);
-  res.status(status.NO_CONTENT).send();
-});
 
 const socialLogin = catchAsync(async (req, res) => {
   const user = req.user;
+  const adminUser = await userService.findOne({ role: 'admin' });
   if (user.role === 'trainer') {
       const trainer = await Trainer.findOne({ userId: user._id });
       user.roleId = trainer?._id;     
@@ -73,7 +61,13 @@ const socialLogin = catchAsync(async (req, res) => {
       const admin = await Admin.findOne({ userId: user._id });
       user.roleId = admin?._id;
   }
+
   const tokens = await tokenService.generateAuthTokens(user);
+  await createNotification({
+    userId:adminUser._id ,
+    message: `Pending Approval for ${user.firstName}.`,
+    type: 'pending_approval',
+  });
   const frontendURL = `${process.env.FRONTEND_URL}/auth/social-auth-callback?token=${tokens.access.token}&user=${encodeURIComponent(JSON.stringify(user))}`;
   res.redirect(frontendURL);
 });
@@ -82,15 +76,21 @@ const socialLogin = catchAsync(async (req, res) => {
 const verifyOtp = catchAsync(async (req, res) => {
   const { email, otp, type } = req.body;
   const user = await userService.getUserByEmail(email);
-  
+  const adminUser = await userService.findOne({ role: 'admin' });
   if (!user || !(await user.isOtpMatch(otp)) || new Date() > user.otpExpires) {
     throw new ApiError(status.UNAUTHORIZED, 'Invalid or expired OTP');
   }
 
   await userService.updateUserById(user.id, { otp: null, otpExpires: null });
-
+   await createNotification({
+      userId:adminUser._id ,
+      message: `Pending Approval for ${user.firstName}.`,
+      type: 'pending_approval',
+    });
+  
   if (type === 'signup') {
     await userService.updateUserById(user.id, { isEmailVerified: true });
+
     return res.json({ message: 'Email verified successfully' });
   }
 
@@ -104,11 +104,8 @@ module.exports = {
   register,
   login,
   logout,
-  refreshTokens,
   forgotPassword,
   resetPassword,
-  sendVerificationEmail,
-  verifyEmail,
   socialLogin,
   verifyOtp 
 };

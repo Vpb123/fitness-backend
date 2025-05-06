@@ -68,42 +68,21 @@ const refreshAuth = async (refreshToken) => {
  */
 const resetPassword = async (email, newPassword) => {
   try {
-    // const resetPasswordTokenDoc = await tokenService.verifyToken(resetPasswordToken, tokenTypes.RESET_PASSWORD);
-    // const user = await userService.getUserById(resetPasswordTokenDoc.user);
+
     const user  =  await userService.getUserByEmail(email);
     if (!user) {
       throw new Error();
     }
     await userService.updateUserById(user.id, { password: newPassword });
-    // await Token.deleteMany({ user: user.id, type: tokenTypes.RESET_PASSWORD });
   } catch (error) {
     throw new ApiError(status.UNAUTHORIZED, 'Password reset failed');
   }
 };
 
-/**
- * Verify email
- * @param {string} verifyEmailToken
- * @returns {Promise}
- */
-const verifyEmail = async (verifyEmailToken) => {
-  try {
-    const verifyEmailTokenDoc = await tokenService.verifyToken(verifyEmailToken, tokenTypes.VERIFY_EMAIL);
-    const user = await userService.getUserById(verifyEmailTokenDoc.user);
-    if (!user) {
-      throw new Error();
-    }
-    await Token.deleteMany({ user: user.id, type: tokenTypes.VERIFY_EMAIL });
-    await userService.updateUserById(user.id, { isEmailVerified: true });
-  } catch (error) {
-    throw new ApiError(statuss.UNAUTHORIZED, 'Email verification failed');
-  }
-};
 
 module.exports = {
   loginUserWithEmailAndPassword,
   logout,
   refreshAuth,
   resetPassword,
-  verifyEmail,
 };

@@ -1,7 +1,7 @@
 const { User, Member, Trainer, TrainingCenter } = require('../models');
 const mongoose = require('mongoose');
 const moment = require('moment');
-
+const { createNotification } = require('./notification.service')
 const getAllUsers = async () => {
   const users = await User.find({ isDeleted: { $ne: true }, role: { $ne: 'admin' } }).lean();
 
@@ -123,6 +123,11 @@ const approveOrDeclineUser = async (userId, action) => {
 
   if (action === 'approve') {
     user.isApproved = true;
+     await createNotification({
+        userId:userId ,
+        message: `Account approved by Admin`,
+        type: 'general',
+      });
     await user.save();
     return { message: 'User approved successfully' };
   }
@@ -189,6 +194,12 @@ const getAllTrainingCenters = async () => {
       center.trainers.push(trainerId);
       await center.save();
     }
+     await createNotification({
+        userId:trainerId ,
+        message: `New Training center assigned by Admin`,
+        type: 'center_assigned',
+      });
+
     return center;
   };
   

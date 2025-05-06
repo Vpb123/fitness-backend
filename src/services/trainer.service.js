@@ -141,7 +141,7 @@ const respondToMemberRequest = async (trainerId, requestId, action, alternativeT
   await createNotification({
     userId: request.memberId.userId,
     message,
-    type: 'trainer_request_response',
+    type: 'request_response',
   });
 
   return request;

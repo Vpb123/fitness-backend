@@ -1,8 +1,9 @@
-const { Trainer, TrainerRequest, Member, WorkoutPlan, TrainingSession } = require('../models/');
+const { Trainer, TrainerRequest, Member, WorkoutPlan, TrainingSession, User } = require('../models/');
 const { status } = require('http-status');
 const moment = require('moment');
 const dayjs = require('dayjs');
 const ApiError = require('../utils/ApiError');
+const { createNotification } = require('./notification.service');
 /**
  * Get paginated list of trainers with filters
  * @param {Object} filters
@@ -35,10 +36,11 @@ const getAvailableTrainers = async (filters, options) => {
  * @param {Object} requestData - trainerId and goalDescription
  * @returns {Promise<TrainerRequest>}
  */
-const sendTrainerRequest = async (memberId, requestData) => {
+const sendTrainerRequest = async (userId, memberId, requestData) => {
   const { trainerId, goalDescription } = requestData;
 
-  // Check if the member already has a pending/accepted request
+  const trainer = await Trainer.findById(trainerId).select('userId')
+  const user  = await User.findById(id).select('firstName lastName');
   const existingRequest = await TrainerRequest.findOne({
     memberId,
     trainerId,
@@ -55,6 +57,12 @@ const sendTrainerRequest = async (memberId, requestData) => {
     goalDescription,
   });
 
+   await createNotification({
+      userId: trainer.userId,
+      message:`New Connection Request by ${user.firstName} ${user.lastName}`,
+      type: 'connection_request',
+    });
+
   return request;
 };
 
@@ -69,7 +77,7 @@ const getWeekNumberInWorkoutPlan = (planStartDate, sessionDate) => {
 };
 
 const requestTrainingSession = async (memberId, sessionData) => {
-  const member = await Member.findById(memberId);
+  const member = await Member.findById(memberId).populate('userId', 'firstName lastName').populate('currentTrainerId', 'userId' );
   if (!member || !member.currentTrainerId) {
     throw new ApiError(status.BAD_REQUEST, 'You are not connected to any trainer');
   }
@@ -125,6 +133,12 @@ const requestTrainingSession = async (memberId, sessionData) => {
     status: 'requested',
   });
 
+  await createNotification({
+    userId: member.currentTrainerId.userId,
+    message:`${member.userId.firstName} ${member.userId.lastName} has requested a session`,
+    type: 'session_request',
+  });
+
   return session;
 };
 
@@ -152,6 +166,7 @@ const getUpcomingSessions = async (memberId, statusFilter) => {
 
 const cancelSession = async (memberId, sessionId) => {
   const session = await TrainingSession.findById(sessionId);
+  const member = await Member.findById(memberId).populate('userId', 'firstName').populate('currentTrainerId', 'userId')
   if (!session) {
     throw new ApiError(status.NOT_FOUND, 'Session not found');
   }
@@ -166,6 +181,11 @@ const cancelSession = async (memberId, sessionId) => {
 
   session.status = 'cancelled';
   await session.save();
+  await createNotification({
+    userId: member.currentTrainerId.userId,
+    message:`Session was on ${session.scheduledDate} cancelled by ${member.userId.firsName}`,
+    type: 'member_cancelled_session',
+  });
 
   return session;
 };

@@ -26,7 +26,8 @@ const getAvailableTrainers = catchAsync(async (req, res) => {
 
 const sendTrainerRequest = catchAsync(async (req, res) => {
   const memberId = req.user.roleId;
-  const request = await memberService.sendTrainerRequest(memberId, req.body);
+  const userId = req.user.id
+  const request = await memberService.sendTrainerRequest(userId, memberId, req.body);
   res.status(201).json({
     message: 'Trainer request sent successfully',
     request,
