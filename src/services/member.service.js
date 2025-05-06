@@ -103,6 +103,16 @@ const requestTrainingSession = async (memberId, sessionData) => {
     throw new ApiError(status.BAD_REQUEST, `Week ${weekNumber} is not defined in the workout plan`);
   }
 
+  const sessionExist = await TrainingSession.findOne({
+    memberId,
+    trainerId: member.currentTrainerId,
+    scheduledDate: sessionDate.toDate()
+  })
+
+  if(sessionExist){
+    throw new ApiError(status.BAD_REQUEST, `Session already exists on ${sessionDate}`)
+  }
+
   const session = await TrainingSession.create({
     memberId,
     trainerId: member.currentTrainerId,
@@ -111,7 +121,7 @@ const requestTrainingSession = async (memberId, sessionData) => {
     scheduledDate: sessionDate.toDate(),
     duration: sessionData.duration,
     note: sessionData.note || '',
-    sessionType: 'TBD',
+    sessionType: sessionData.sessionType ? sessionData.sessionType : 'TBD',
     status: 'requested',
   });
 
@@ -119,7 +129,6 @@ const requestTrainingSession = async (memberId, sessionData) => {
 };
 
 const getSessionHistory = async (memberId) => {
-  console.log(memberId);
   return TrainingSession.find({
     memberId,
     status: 'completed',
