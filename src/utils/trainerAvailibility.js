@@ -96,8 +96,8 @@ const getTrainerAvailabilityForDate = async (trainerId, date) => {
   const trainer = await Trainer.findOne({ _id: trainerId });
   if (!trainer) return [];
 
-  const dateStr = dayjs(date).format('YYYY-MM-DD');
-  const dayOfWeek = dayjs(date).format('dddd');
+  const dateStr = dayjs.utc(date).tz("Europe/London").format('YYYY-MM-DD');
+  const dayOfWeek = dayjs.utc(date).tz("Europe/London").format('dddd');
 
   const sessions = await TrainingSession.find({
     trainerId,
@@ -118,8 +118,8 @@ const getTrainerAvailabilityForDate = async (trainerId, date) => {
   const slots = [];
 
   for (const slot of rawSlots) {
-    const slotStart = dayjs(`${dateStr}T${slot.startTime}`).tz("Europe/London");
-    const slotEnd = dayjs(`${dateStr}T${slot.endTime}`).tz("Europe/London");
+    const slotStart = dayjs.utc(`${dateStr}T${slot.startTime}`).tz("Europe/London");
+    const slotEnd = dayjs.utc(`${dateStr}T${slot.endTime}`).tz("Europe/London");
 
     const overlaps = bookedSlots.some(({ start, end }) =>
       isTimeOverlapping(slotStart, slotEnd, start, end)
@@ -132,6 +132,7 @@ const getTrainerAvailabilityForDate = async (trainerId, date) => {
 
   return slots;
 };
+
 
 const getTrainerAvailabilityForRange = async (trainerId, startDate, endDate) => {
   const trainer = await Trainer.findOne({ _id: trainerId });
@@ -173,8 +174,8 @@ const getTrainerAvailabilityForRange = async (trainerId, startDate, endDate) => 
     const daySlots = [];
 
     for (const slot of rawSlots) {
-      const slotStart = dayjs(`${dateStr}T${slot.startTime}`).tz("Europe/London");
-      const slotEnd = dayjs(`${dateStr}T${slot.endTime}`).tz("Europe/London");
+      const slotStart = dayjs.utc(`${dateStr}T${slot.startTime}`).tz("Europe/London");
+      const slotEnd = dayjs.utc(`${dateStr}T${slot.endTime}`).tz("Europe/London");
 
       const overlaps = (bookedSlotsMap[dateStr] || []).some(({ start, end }) =>
         isTimeOverlapping(slotStart, slotEnd, start, end)
@@ -198,6 +199,7 @@ const getTrainerAvailabilityForRange = async (trainerId, startDate, endDate) => 
 
   return availability;
 };
+
 
 module.exports = {
   isTrainerAvailable,

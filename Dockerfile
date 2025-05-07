@@ -1,5 +1,5 @@
 
-FROM node:18-slim as deps
+FROM node:18-slim AS deps
 
 WORKDIR /app
 
