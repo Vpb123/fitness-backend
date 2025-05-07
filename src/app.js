@@ -11,7 +11,6 @@ const { authLimiter } = require('./middlewares/rateLimiter');
 const routes = require('./routes/v1');
 const { errorConverter, errorHandler } = require('./middlewares/error');
 const ApiError = require('./utils/ApiError');
-
 const app = express();
 
 // set security HTTP headers
@@ -31,7 +30,7 @@ app.use(compression());
 
 // enable cors
 app.use(cors({
-  origin: "http://localhost:5173", 
+  origin: "https://gymbuddies-frontend.azurewebsites.net", 
   credentials: true, 
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"], 
   allowedHeaders: ["Origin", "X-Requested-With", "Content-Type", "Accept", "Authorization"], 
