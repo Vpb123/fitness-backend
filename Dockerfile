@@ -1,15 +1,21 @@
-FROM node:alpine
 
-RUN mkdir -p /usr/src/node-app && chown -R node:node /usr/src/node-app
+FROM node:18-slim as deps
+
+WORKDIR /app
+
+COPY package.json package-lock.json* ./
+
+RUN npm ci --omit=dev
+
+
+FROM node:18-slim
 
 WORKDIR /usr/src/node-app
 
-COPY package.json yarn.lock ./
+COPY --from=deps /app/node_modules ./node_modules
 
-USER node
+COPY . .
 
-RUN yarn install --pure-lockfile
+EXPOSE 5000
 
-COPY --chown=node:node . .
-
-EXPOSE 3000
+CMD ["npm", "start"]

@@ -67,7 +67,13 @@ const getTrainerMembers = async (trainerId, memberId = null) => {
 };
 
 const getPendingMemberRequests = async (trainerId) => {
-  const requests = await TrainerRequest.find({ trainerId, status: 'pending' }).populate({
+  const requests = await TrainerRequest.find({
+    status: 'pending',
+    $or: [
+      { trainerId },
+      { alternativeTrainerId: trainerId }
+    ]
+  }).populate({
     path: 'memberId',
     select: 'age height weight userId',
     populate: {
