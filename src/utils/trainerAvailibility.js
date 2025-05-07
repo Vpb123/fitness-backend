@@ -1,8 +1,12 @@
 const dayjs = require('dayjs');
 const isSameOrAfter = require('dayjs/plugin/isSameOrAfter');
 const isSameOrBefore = require('dayjs/plugin/isSameOrBefore');
+const utc = require('dayjs/plugin/utc');
+const timezone = require('dayjs/plugin/timezone');
 dayjs.extend(isSameOrAfter);
 dayjs.extend(isSameOrBefore);
+dayjs.extend(utc);
+dayjs.extend(timezone);
 
 const { Trainer, TrainingSession } = require('../models');
 
@@ -21,7 +25,7 @@ const isTrainerAvailable = async (trainerId, scheduledDate, duration) => {
     return false;
   }
 
-  const targetStart = dayjs(scheduledDate);
+  const targetStart = dayjs(scheduledDate).tz("Europe/London");
   const targetEnd = targetStart.add(duration, 'hour');
   const targetDay = targetStart.format('dddd');
   const dateStr = targetStart.format('YYYY-MM-DD');
@@ -39,7 +43,7 @@ const isTrainerAvailable = async (trainerId, scheduledDate, duration) => {
   });
 
   for (const session of sessions) {
-    const sessionStart = dayjs(session.scheduledDate);
+    const sessionStart = dayjs(session.scheduledDate).tz("Europe/London");
     const sessionEnd = sessionStart.add(session.duration, 'hour');
 
     console.log("Checking overlap with existing session:", {
@@ -57,8 +61,8 @@ const isTrainerAvailable = async (trainerId, scheduledDate, duration) => {
   if (dateSpecific) {
     console.log("Checking against date-specific availability...");
     for (const { startTime, endTime } of dateSpecific.slots) {
-      const slotStart = dayjs(`${dateStr}T${startTime}`);
-      const slotEnd = dayjs(`${dateStr}T${endTime}`);
+      const slotStart = dayjs(`${dateStr}T${startTime}`).tz("Europe/London");;
+      const slotEnd = dayjs(`${dateStr}T${endTime}`).tz("Europe/London");;
       console.log("Slot:", { slotStart: slotStart.format(), slotEnd: slotEnd.format() });
 
       if (targetStart.isSameOrAfter(slotStart) && targetEnd.isSameOrBefore(slotEnd)) {
@@ -148,8 +152,8 @@ const getTrainerAvailabilityForRange = async (trainerId, startDate, endDate) => 
 
   const bookedSlotsMap = {};
   for (const session of sessions) {
-    const dateStr = dayjs(session.scheduledDate).format('YYYY-MM-DD');
-    const start = dayjs(session.scheduledDate);
+    const dateStr = dayjs(session.scheduledDate).tz("Europe/London").format('YYYY-MM-DD');
+    const start = dayjs(session.scheduledDate).tz("Europe/London");
     const end = start.add(session.duration, 'hour');
 
     if (!bookedSlotsMap[dateStr]) {
@@ -160,7 +164,7 @@ const getTrainerAvailabilityForRange = async (trainerId, startDate, endDate) => 
   }
 
   const availability = [];
-  let current = dayjs(startDate);
+  let current = dayjs(startDate).tz("Europe/London");;
 
   while (current.isSameOrBefore(endDate, 'day')) {
     const dateStr = current.format('YYYY-MM-DD');
@@ -173,8 +177,8 @@ const getTrainerAvailabilityForRange = async (trainerId, startDate, endDate) => 
     const daySlots = [];
 
     for (const slot of rawSlots) {
-      const slotStart = dayjs(`${dateStr}T${slot.startTime}`);
-      const slotEnd = dayjs(`${dateStr}T${slot.endTime}`);
+      const slotStart = dayjs(`${dateStr}T${slot.startTime}`).tz("Europe/London");;
+      const slotEnd = dayjs(`${dateStr}T${slot.endTime}`).tz("Europe/London");;
       const overlaps = (bookedSlotsMap[dateStr] || []).some(({ start, end }) =>
         isTimeOverlapping(slotStart, slotEnd, start, end)
       );
