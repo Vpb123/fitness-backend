@@ -40,7 +40,7 @@ const sendTrainerRequest = async (userId, memberId, requestData) => {
   const { trainerId, goalDescription } = requestData;
 
   const trainer = await Trainer.findById(trainerId).select('userId')
-  const user  = await User.findById(id).select('firstName lastName');
+  const user  = await User.findById(userId).select('firstName lastName');
   const existingRequest = await TrainerRequest.findOne({
     memberId,
     trainerId,
