@@ -341,7 +341,7 @@ const updateSession = async (trainerId, sessionId, updateData) => {
   const newDate = updateData.scheduledDate || session.scheduledDate;
   const newDuration = updateData.duration || session.duration;
 
-  const isAvailable = await isTrainerAvailable(trainerId, new Date(newDate), newDuration);
+  const isAvailable = await isTrainerAvailable(trainerId, newDate, newDuration);
   if (!isAvailable) throw new ApiError(status.BAD_REQUEST, 'Trainer is not available at this time');
 
 
@@ -400,7 +400,7 @@ const respondToSessionRequest = async (trainerId, sessionId, action) => {
   }
   console.log("date::", session.scheduledDate);
   if (action === 'approve') {
-    const isAvailable = await isTrainerAvailable(trainerId, new Date(session.scheduledDate), session.duration);
+    const isAvailable = await isTrainerAvailable(trainerId, session.scheduledDate, session.duration);
     if (!isAvailable) throw new ApiError(status.BAD_REQUEST, 'You are not available at this time');
 
     session.status = 'scheduled';
