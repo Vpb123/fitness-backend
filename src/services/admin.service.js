@@ -148,7 +148,7 @@ const getAdminStats = async () => {
   const [totalMembers, totalTrainers, pendingApprovals, totalCenters] = await Promise.all([
     User.countDocuments({ role: 'member', isDeleted: { $ne: true }, isApproved: true }),
     User.countDocuments({ role: 'trainer', isDeleted: { $ne: true }, isApproved: true }),
-    User.countDocuments({ isDeleted: { $ne: true }, isApproved: false }),
+    User.countDocuments({ isDeleted: false, isApproved: false }),
     TrainingCenter.countDocuments({ isDeleted: { $ne: true } }),
   ]);
 
@@ -179,7 +179,6 @@ const getAdminStats = async () => {
 
 const getAllTrainingCenters = async () => {
     const centers = await TrainingCenter.find().populate('trainers', 'userId').lean();
-  
     return centers.map((center, index) => ({
       ...center,
       id:index+1,

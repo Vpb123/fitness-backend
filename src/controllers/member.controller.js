@@ -122,6 +122,15 @@ const getMemeberDetails = catchAsync(async (req, res) => {
   });
 });
 
+const getMemberTrainerRequests = catchAsync(async (req, res) => {
+  const memberId = req.user.roleId;
+  const trainerReq = await memberService.getMemberTrainerRequests(memberId);
+
+  res.status(status.OK).json({
+    trainerId: trainerReq
+  });
+})
+
 
 
 module.exports = {
@@ -136,5 +145,6 @@ module.exports = {
   leaveTrainerReview,
   getPendingSessionsByWeek,
   requestPendingSession,
-  getMemeberDetails
+  getMemeberDetails,
+  getMemberTrainerRequests
 }

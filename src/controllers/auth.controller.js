@@ -2,7 +2,7 @@ const { status } = require("http-status");
 const catchAsync = require('../utils/catchAsync');
 const { authService, userService, tokenService, emailService } = require('../services');
 const ApiError = require('../utils/ApiError');
-const { Trainer } = require('../models');
+const { Trainer, User } = require('../models');
 const { Member } = require('../models');
 const { Admin } = require("../models");
 const { createNotification } = require('../services/notification.service');
@@ -49,7 +49,7 @@ const resetPassword = catchAsync(async (req, res) => {
 
 const socialLogin = catchAsync(async (req, res) => {
   const user = req.user;
-  const adminUser = await userService.findOne({ role: 'admin' });
+  const adminUser = await User.findOne({ role: 'admin' });
   if (user.role === 'trainer') {
       const trainer = await Trainer.findOne({ userId: user._id });
       user.roleId = trainer?._id;     
