@@ -1,0 +1,95 @@
+Date : 2025-05-08 21:25:39
+Directory : e:\MSc in Computer Science\Web and Cloud Dev\fitness-backend\src
+Total : 58 files,  3664 codes, 224 comments, 730 blanks, all 4618 lines
+
+Languages
++------------+------------+------------+------------+------------+------------+
+| language   | files      | code       | comment    | blank      | total      |
++------------+------------+------------+------------+------------+------------+
+| JavaScript |         58 |      3,664 |        224 |        730 |      4,618 |
++------------+------------+------------+------------+------------+------------+
+
+Directories
++---------------------------------------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+| path                                                                                                    | files      | code       | comment    | blank      | total      |
++---------------------------------------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+| .                                                                                                       |         58 |      3,664 |        224 |        730 |      4,618 |
+| . (Files)                                                                                               |          2 |         73 |         13 |         19 |        105 |
+| config                                                                                                  |          5 |        216 |          0 |         28 |        244 |
+| controllers                                                                                             |          7 |        602 |          0 |        162 |        764 |
+| cron                                                                                                    |          1 |         59 |          0 |         10 |         69 |
+| middlewares                                                                                             |          4 |         89 |          1 |         21 |        111 |
+| models                                                                                                  |         15 |        746 |         36 |        101 |        883 |
+| models (Files)                                                                                          |         12 |        669 |         11 |         85 |        765 |
+| models\plugins                                                                                          |          3 |         77 |         25 |         16 |        118 |
+| routes                                                                                                  |          7 |        150 |          3 |         32 |        185 |
+| routes\v1                                                                                               |          7 |        150 |          3 |         32 |        185 |
+| services                                                                                                |          9 |      1,400 |        164 |        284 |      1,848 |
+| utils                                                                                                   |          4 |        192 |          7 |         49 |        248 |
+| validations                                                                                             |          4 |        137 |          0 |         24 |        161 |
++---------------------------------------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+
+Files
++---------------------------------------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+| filename                                                                                                | language   | code       | comment    | blank      | total      |
++---------------------------------------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+| e:\MSc in Computer Science\Web and Cloud Dev\fitness-backend\src\app.js                                 | JavaScript |         38 |         13 |         14 |         65 |
+| e:\MSc in Computer Science\Web and Cloud Dev\fitness-backend\src\config\config.js                       | JavaScript |         69 |          0 |          6 |         75 |
+| e:\MSc in Computer Science\Web and Cloud Dev\fitness-backend\src\config\logger.js                       | JavaScript |         23 |          0 |          4 |         27 |
+| e:\MSc in Computer Science\Web and Cloud Dev\fitness-backend\src\config\passport.js                     | JavaScript |        105 |          0 |         13 |        118 |
+| e:\MSc in Computer Science\Web and Cloud Dev\fitness-backend\src\config\roles.js                        | JavaScript |         10 |          0 |          3 |         13 |
+| e:\MSc in Computer Science\Web and Cloud Dev\fitness-backend\src\config\tokens.js                       | JavaScript |          9 |          0 |          2 |         11 |
+| e:\MSc in Computer Science\Web and Cloud Dev\fitness-backend\src\controllers\admin.controller.js        | JavaScript |         63 |          0 |         16 |         79 |
+| e:\MSc in Computer Science\Web and Cloud Dev\fitness-backend\src\controllers\auth.controller.js         | JavaScript |         91 |          0 |         21 |        112 |
+| e:\MSc in Computer Science\Web and Cloud Dev\fitness-backend\src\controllers\index.js                   | JavaScript |          2 |          0 |          1 |          3 |
+| e:\MSc in Computer Science\Web and Cloud Dev\fitness-backend\src\controllers\member.controller.js       | JavaScript |        111 |          0 |         29 |        140 |
+| e:\MSc in Computer Science\Web and Cloud Dev\fitness-backend\src\controllers\notification.controller.js | JavaScript |         30 |          0 |         13 |         43 |
+| e:\MSc in Computer Science\Web and Cloud Dev\fitness-backend\src\controllers\trainer.controller.js      | JavaScript |        212 |          0 |         59 |        271 |
+| e:\MSc in Computer Science\Web and Cloud Dev\fitness-backend\src\controllers\user.controller.js         | JavaScript |         93 |          0 |         23 |        116 |
+| e:\MSc in Computer Science\Web and Cloud Dev\fitness-backend\src\cron\sessionUpdater.js                 | JavaScript |         59 |          0 |         10 |         69 |
+| e:\MSc in Computer Science\Web and Cloud Dev\fitness-backend\src\index.js                               | JavaScript |         35 |          0 |          5 |         40 |
+| e:\MSc in Computer Science\Web and Cloud Dev\fitness-backend\src\middlewares\auth.js                    | JavaScript |         26 |          0 |          6 |         32 |
+| e:\MSc in Computer Science\Web and Cloud Dev\fitness-backend\src\middlewares\error.js                   | JavaScript |         36 |          1 |          8 |         45 |
+| e:\MSc in Computer Science\Web and Cloud Dev\fitness-backend\src\middlewares\rateLimiter.js             | JavaScript |          9 |          0 |          3 |         12 |
+| e:\MSc in Computer Science\Web and Cloud Dev\fitness-backend\src\middlewares\validate.js                | JavaScript |         18 |          0 |          4 |         22 |
+| e:\MSc in Computer Science\Web and Cloud Dev\fitness-backend\src\models\admin.model.js                  | JavaScript |         24 |          0 |          5 |         29 |
+| e:\MSc in Computer Science\Web and Cloud Dev\fitness-backend\src\models\index.js                        | JavaScript |         11 |          0 |          2 |         13 |
+| e:\MSc in Computer Science\Web and Cloud Dev\fitness-backend\src\models\member.model.js                 | JavaScript |         49 |          0 |          6 |         55 |
+| e:\MSc in Computer Science\Web and Cloud Dev\fitness-backend\src\models\notification.model.js           | JavaScript |         51 |          0 |          9 |         60 |
+| e:\MSc in Computer Science\Web and Cloud Dev\fitness-backend\src\models\plugins\index.js                | JavaScript |          2 |          0 |          1 |          3 |
+| e:\MSc in Computer Science\Web and Cloud Dev\fitness-backend\src\models\plugins\paginate.plugin.js      | JavaScript |         44 |         19 |          8 |         71 |
+| e:\MSc in Computer Science\Web and Cloud Dev\fitness-backend\src\models\plugins\toJSON.plugin.js        | JavaScript |         31 |          6 |          7 |         44 |
+| e:\MSc in Computer Science\Web and Cloud Dev\fitness-backend\src\models\token.model.js                  | JavaScript |         36 |          4 |          5 |         45 |
+| e:\MSc in Computer Science\Web and Cloud Dev\fitness-backend\src\models\trainer.model.js                | JavaScript |         84 |          0 |         10 |         94 |
+| e:\MSc in Computer Science\Web and Cloud Dev\fitness-backend\src\models\trainerRequest.model.js         | JavaScript |         45 |          1 |          5 |         51 |
+| e:\MSc in Computer Science\Web and Cloud Dev\fitness-backend\src\models\trainerReview.model.js          | JavaScript |         46 |          2 |          8 |         56 |
+| e:\MSc in Computer Science\Web and Cloud Dev\fitness-backend\src\models\trainingCenter.model.js         | JavaScript |         67 |          0 |          5 |         72 |
+| e:\MSc in Computer Science\Web and Cloud Dev\fitness-backend\src\models\trainingSession.model.js        | JavaScript |         71 |          1 |          5 |         77 |
+| e:\MSc in Computer Science\Web and Cloud Dev\fitness-backend\src\models\user.model.js                   | JavaScript |        111 |          3 |         18 |        132 |
+| e:\MSc in Computer Science\Web and Cloud Dev\fitness-backend\src\models\workoutPlan.model.js            | JavaScript |         74 |          0 |          7 |         81 |
+| e:\MSc in Computer Science\Web and Cloud Dev\fitness-backend\src\routes\v1\admin.route.js               | JavaScript |         13 |          0 |          5 |         18 |
+| e:\MSc in Computer Science\Web and Cloud Dev\fitness-backend\src\routes\v1\auth.route.js                | JavaScript |         31 |          0 |          5 |         36 |
+| e:\MSc in Computer Science\Web and Cloud Dev\fitness-backend\src\routes\v1\index.js                     | JavaScript |         39 |          0 |          7 |         46 |
+| e:\MSc in Computer Science\Web and Cloud Dev\fitness-backend\src\routes\v1\member.route.js              | JavaScript |         18 |          0 |          3 |         21 |
+| e:\MSc in Computer Science\Web and Cloud Dev\fitness-backend\src\routes\v1\notification.route.js        | JavaScript |          9 |          0 |          4 |         13 |
+| e:\MSc in Computer Science\Web and Cloud Dev\fitness-backend\src\routes\v1\trainer.route.js             | JavaScript |         27 |          0 |          3 |         30 |
+| e:\MSc in Computer Science\Web and Cloud Dev\fitness-backend\src\routes\v1\user.route.js                | JavaScript |         13 |          3 |          5 |         21 |
+| e:\MSc in Computer Science\Web and Cloud Dev\fitness-backend\src\services\admin.service.js              | JavaScript |        191 |          2 |         33 |        226 |
+| e:\MSc in Computer Science\Web and Cloud Dev\fitness-backend\src\services\auth.service.js               | JavaScript |         57 |         22 |         10 |         89 |
+| e:\MSc in Computer Science\Web and Cloud Dev\fitness-backend\src\services\email.service.js              | JavaScript |         48 |         34 |          7 |         89 |
+| e:\MSc in Computer Science\Web and Cloud Dev\fitness-backend\src\services\index.js                      | JavaScript |          8 |          0 |          0 |          8 |
+| e:\MSc in Computer Science\Web and Cloud Dev\fitness-backend\src\services\member.service.js             | JavaScript |        306 |         19 |         74 |        399 |
+| e:\MSc in Computer Science\Web and Cloud Dev\fitness-backend\src\services\notification.service.js       | JavaScript |         47 |          0 |         15 |         62 |
+| e:\MSc in Computer Science\Web and Cloud Dev\fitness-backend\src\services\token.service.js              | JavaScript |         63 |         28 |         11 |        102 |
+| e:\MSc in Computer Science\Web and Cloud Dev\fitness-backend\src\services\trainer.service.js            | JavaScript |        527 |         24 |        102 |        653 |
+| e:\MSc in Computer Science\Web and Cloud Dev\fitness-backend\src\services\user.service.js               | JavaScript |        153 |         35 |         32 |        220 |
+| e:\MSc in Computer Science\Web and Cloud Dev\fitness-backend\src\utils\ApiError.js                      | JavaScript |         13 |          0 |          2 |         15 |
+| e:\MSc in Computer Science\Web and Cloud Dev\fitness-backend\src\utils\catchAsync.js                    | JavaScript |          4 |          0 |          2 |          6 |
+| e:\MSc in Computer Science\Web and Cloud Dev\fitness-backend\src\utils\pick.js                          | JavaScript |          9 |          7 |          2 |         18 |
+| e:\MSc in Computer Science\Web and Cloud Dev\fitness-backend\src\utils\trainerAvailibility.js           | JavaScript |        166 |          0 |         43 |        209 |
+| e:\MSc in Computer Science\Web and Cloud Dev\fitness-backend\src\validations\auth.validation.js         | JavaScript |         68 |          0 |         13 |         81 |
+| e:\MSc in Computer Science\Web and Cloud Dev\fitness-backend\src\validations\custom.validation.js       | JavaScript |         19 |          0 |          3 |         22 |
+| e:\MSc in Computer Science\Web and Cloud Dev\fitness-backend\src\validations\index.js                   | JavaScript |          2 |          0 |          1 |          3 |
+| e:\MSc in Computer Science\Web and Cloud Dev\fitness-backend\src\validations\user.validation.js         | JavaScript |         48 |          0 |          7 |         55 |
+| Total                                                                                                   |            |      3,664 |        224 |        730 |      4,618 |
++---------------------------------------------------------------------------------------------------------+------------+------------+------------+------------+------------+
