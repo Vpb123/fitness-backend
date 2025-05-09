@@ -1,5 +1,5 @@
 const Notification = require('../models/notification.model');
-
+const mongoose = require('mongoose');
 const createNotification = async ({ userId, message, type, link }) => {
   if (!userId || !message || !type) {
     throw new Error('Missing required notification fields');

@@ -6,7 +6,8 @@ dotenv.config({ path: path.join(__dirname, '../../.env') });
 
 const envVarsSchema = Joi.object()
   .keys({
-    NODE_ENV: Joi.string().valid('production', 'development', 'test').required(),
+    BACKEND_URL: Joi.string().required().description('Backend base URL'),
+    FRONTEND_URL: Joi.string().required().description('Frontend base URL'),
     PORT: Joi.number().default(3000),
     MONGODB_URL: Joi.string().required().description('Mongo DB url'),
     JWT_SECRET: Joi.string().required().description('JWT secret key'),
@@ -33,10 +34,9 @@ if (error) {
 }
 
 module.exports = {
-  env: envVars.NODE_ENV,
   port: envVars.PORT,
   mongoose: {
-    url: envVars.MONGODB_URL + (envVars.NODE_ENV === 'test' ? '-test' : ''),
+    url: envVars.MONGODB_URL,
     options: {
       useNewUrlParser: true,
       useUnifiedTopology: true,
@@ -52,12 +52,12 @@ module.exports = {
   google: {
     clientId: process.env.GOOGLE_CLIENT_ID,
     clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    callbackURL: 'http://localhost:5000/v1/auth/google/callback',
+    callbackURL: `${envVars.BACKEND_URL}auth/google/callback`,
   },
   facebook: {
     clientId: process.env.FACEBOOK_CLIENT_ID,
     clientSecret: process.env.FACEBOOK_CLIENT_SECRET,
-    callbackURL: 'http://localhost:5000/v1/auth/facebook/callback',
+    callbackURL: `${envVars.BACKEND_URL}auth/facebook/callback`,
   },
   email: {
     smtp: {
@@ -70,4 +70,5 @@ module.exports = {
     },
     from: envVars.EMAIL_FROM,
   },
+  frontendUrl: envVars.FRONTEND_URL,
 };

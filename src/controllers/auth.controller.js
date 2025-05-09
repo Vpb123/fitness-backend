@@ -2,9 +2,8 @@ const { status } = require("http-status");
 const catchAsync = require('../utils/catchAsync');
 const { authService, userService, tokenService, emailService } = require('../services');
 const ApiError = require('../utils/ApiError');
-const { Trainer, User } = require('../models');
-const { Member } = require('../models');
-const { Admin } = require("../models");
+const { Admin, User, Trainer, Member } = require("../models");
+
 const { createNotification } = require('../services/notification.service');
 
 const register = catchAsync(async (req, res) => {
@@ -63,11 +62,13 @@ const socialLogin = catchAsync(async (req, res) => {
   }
 
   const tokens = await tokenService.generateAuthTokens(user);
-  await createNotification({
-    userId:adminUser._id ,
-    message: `Pending Approval for ${user.firstName}.`,
-    type: 'pending_approval',
-  });
+    if(!user.isApproved){
+    await createNotification({
+      userId:adminUser._id ,
+      message: `Pending Approval for ${user.firstName}.`,
+      type: 'pending_approval',
+    });
+    }
   const frontendURL = `${process.env.FRONTEND_URL}/auth/social-auth-callback?token=${tokens.access.token}&user=${encodeURIComponent(JSON.stringify(user))}`;
   res.redirect(frontendURL);
 });
@@ -76,21 +77,20 @@ const socialLogin = catchAsync(async (req, res) => {
 const verifyOtp = catchAsync(async (req, res) => {
   const { email, otp, type } = req.body;
   const user = await userService.getUserByEmail(email);
-  const adminUser = await userService.findOne({ role: 'admin' });
+  const adminUser = await User.findOne({ role: 'admin' });
   if (!user || !(await user.isOtpMatch(otp)) || new Date() > user.otpExpires) {
     throw new ApiError(status.UNAUTHORIZED, 'Invalid or expired OTP');
   }
 
   await userService.updateUserById(user.id, { otp: null, otpExpires: null });
-   await createNotification({
+  
+  if (type === 'signup') {
+    await userService.updateUserById(user.id, { isEmailVerified: true });
+    await createNotification({
       userId:adminUser._id ,
       message: `Pending Approval for ${user.firstName}.`,
       type: 'pending_approval',
     });
-  
-  if (type === 'signup') {
-    await userService.updateUserById(user.id, { isEmailVerified: true });
-
     return res.json({ message: 'Email verified successfully' });
   }
 
