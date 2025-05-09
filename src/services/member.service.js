@@ -43,13 +43,16 @@ const sendTrainerRequest = async (userId, memberId, requestData) => {
   const user  = await User.findById(userId).select('firstName lastName');
   const existingRequest = await TrainerRequest.findOne({
     memberId,
-    trainerId,
-    status: { $in: ['pending', 'accepted'] },
+    trainerId
   });
 
-  if (existingRequest) {
-    throw new ApiError(status.BAD_REQUEST, 'You already have a pending or accepted request with this trainer');
-  }
+  if(existingRequest.status == 'rejected'){
+    await TrainerRequest.deleteOne({memberId: memberId, trainerId: trainerId})
+  } else{
+    if (existingRequest) {
+      throw new ApiError(status.BAD_REQUEST, 'You already have a pending or accepted request with this trainer');
+    }
+  } 
 
   const request = await TrainerRequest.create({
     memberId,
@@ -382,6 +385,15 @@ const getMemberDetails = async (memberId) => {
 
 };
 
+const getMemberTrainerRequests = async (memberId) => {
+  const request = await TrainerRequest.find({memberId: memberId})
+  if(!request){
+    throw new ApiError(status.NOT_FOUND, 'Request not found')
+  } else{
+    return request
+  }
+}
+
 module.exports = {
   getAvailableTrainers,
   sendTrainerRequest,
@@ -394,5 +406,6 @@ module.exports = {
   leaveTrainerReview,
   getUpcomingPendingSessionsGroupedByWeek,
   requestPendingSession,
-  getMemberDetails
+  getMemberDetails,
+  getMemberTrainerRequests
 };

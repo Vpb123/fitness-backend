@@ -104,8 +104,12 @@ const respondToMemberRequest = async (trainerId, requestId, action, alternativeT
   if (!request) {
     throw new ApiError(status.NOT_FOUND, 'Request not found');
   }
-  if (request.status !== 'pending') {
-    throw new ApiError(status.BAD_REQUEST, 'Request has already been processed');
+  if(request && request.status == 'rejected'){
+    TrainerRequest.deleteOne({memberId: request.memberId, trainerId: trainerId})
+  } else{
+    if (request.status !== 'pending') {
+      throw new ApiError(status.BAD_REQUEST, 'Request has already been processed');
+    }
   }
   const trainer = await Trainer.findById(trainerId).populate('userId', 'firstName lastName');
   if (!trainer) {
@@ -130,7 +134,8 @@ const respondToMemberRequest = async (trainerId, requestId, action, alternativeT
     if (!alternativeTrainerId) {
       throw new ApiError(status.BAD_REQUEST, 'Alternative trainer ID is required for suggestion');
     }
-    const alternativeTrainer = await Trainer.findOne({ _id: alternativeTrainerId });
+    const alternativeTrainer = await Trainer.findOne({ _id: alternativeTrainerId }).populate('userId', 'firstName lastName');
+   
     if (!alternativeTrainer) {
       throw new ApiError(status.NOT_FOUND, 'Alternative trainer not found');
     }
@@ -149,6 +154,7 @@ const respondToMemberRequest = async (trainerId, requestId, action, alternativeT
     message,
     type: 'request_response',
   });
+  
 
   return request;
 };
