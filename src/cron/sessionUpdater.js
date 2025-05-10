@@ -1,7 +1,7 @@
 const cron = require('node-cron');
 const dayjs = require('dayjs');
 const timezone = require('dayjs/plugin/timezone');
-const TrainingSession = require('../models');
+const { TrainingSession } = require('../models');
 
 dayjs.extend(timezone);
 
