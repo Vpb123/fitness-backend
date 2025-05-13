@@ -178,7 +178,7 @@ const getAdminStats = async () => {
 };
 
 const getAllTrainingCenters = async () => {
-    const centers = await TrainingCenter.find().populate('trainers', 'userId').lean();
+    const centers = await TrainingCenter.find().populate('trainers', '_id').lean();
     return centers.map((center, index) => ({
       ...center,
       id:index+1,

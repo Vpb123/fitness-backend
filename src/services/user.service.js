@@ -59,8 +59,10 @@ const getUserByEmail = async (email) => {
   if(!user){
     throw new ApiError(status.NOT_FOUND, 'User not found');
   }
-  if(user.role!=='admin' && !user.isApproved){
-    throw new ApiError(status.NOT_FOUND, 'You are not approved by admin');
+  if(user.isEmailVerified){
+    if(user.role!=='admin' && !user.isApproved){
+      throw new ApiError(status.NOT_FOUND, 'You are not approved by admin');
+    }
   }
   if (user.role === 'trainer') {
     const trainer = await Trainer.findOne({ userId: user._id });
@@ -135,8 +137,8 @@ const getUserProfileById = async (userId) => {
         .select('rating comment createdAt')
         .sort({ createdAt: -1 });
 
-      trainingCenter = await TrainingCenter.findOne({ trainerId: user._id })
-        .select('name address contactNumber facilities');
+       trainingCenter = await TrainingCenter.findOne({ trainers: user._id })
+      .select('name address contactNumber facilities');
     }
 
   } else if (user.role === 'admin') {

@@ -46,10 +46,10 @@ const sendTrainerRequest = async (userId, memberId, requestData) => {
     trainerId
   });
 
-  if(existingRequest.status == 'rejected'){
+  if(existingRequest!== null && existingRequest.status == 'rejected'){
     await TrainerRequest.deleteOne({memberId: memberId, trainerId: trainerId})
   } else{
-    if (existingRequest) {
+    if (existingRequest !== null) {
       throw new ApiError(status.BAD_REQUEST, 'You already have a pending or accepted request with this trainer');
     }
   } 

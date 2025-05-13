@@ -301,7 +301,7 @@ const createWorkoutPlan = async (trainerId, memberId, workoutData) => {
   await createNotification({
     userId: member.userId,
     message: `Your workout plan has been created by ${trainerName}.`,
-    type: 'workout_plan_created',
+    type: 'plan_created',
   });
 
   return { workoutPlan, sessions: sessionsToCreate };

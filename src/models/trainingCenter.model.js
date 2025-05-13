@@ -26,7 +26,7 @@ const trainingCenterSchema = new mongoose.Schema(
     trainers: [
       {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'Trainer', 
+        ref: 'User', 
       },
     ],
     facilities: {
