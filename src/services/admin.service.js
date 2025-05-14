@@ -1,6 +1,13 @@
 const { User, Member, Trainer, TrainingCenter } = require('../models');
 const mongoose = require('mongoose');
-const moment = require('moment');
+const dayjs = require('dayjs');
+const utc = require('dayjs/plugin/utc');
+const timezone = require('dayjs/plugin/timezone');
+
+dayjs.extend(utc);
+dayjs.extend(timezone);
+dayjs.tz.setDefault('Europe/London');
+
 const { createNotification } = require('./notification.service')
 const getAllUsers = async () => {
   const users = await User.find({ isDeleted: { $ne: true }, role: { $ne: 'admin' } }).lean();
@@ -58,8 +65,8 @@ const getAllUsers = async () => {
 
 
 const getMonthlyGrowthStats = async () => {
-  const startOfYear = moment().startOf('year').toDate();
-  const endOfYear = moment().endOf('year').toDate();
+ const startOfYear = dayjs().startOf('year').toDate();
+const endOfYear = dayjs().endOf('year').toDate();
 
   const baseMatch = {
     createdAt: { $gte: startOfYear, $lte: endOfYear },
@@ -142,7 +149,7 @@ const approveOrDeclineUser = async (userId, action) => {
 };
 
 const getAdminStats = async () => {
-  const oneWeekAgo = moment().subtract(7, 'days').toDate();
+  const oneWeekAgo = dayjs().subtract(7, 'day').toDate();
 
   // Current counts
   const [totalMembers, totalTrainers, pendingApprovals, totalCenters] = await Promise.all([

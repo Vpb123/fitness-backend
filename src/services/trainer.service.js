@@ -4,7 +4,20 @@ const ApiError = require('../utils/ApiError');
 const { Member, TrainerRequest, Trainer, TrainingSession, WorkoutPlan } = require('../models');
 const { isTrainerAvailable, getTrainerAvailabilityForDate } = require('../utils/trainerAvailibility');
 const { createNotification } = require('./notification.service');
-const moment = require('moment');
+const dayjs = require('dayjs');
+const isSameOrAfter = require('dayjs/plugin/isSameOrAfter');
+const isSameOrBefore = require('dayjs/plugin/isSameOrBefore');
+const utc = require('dayjs/plugin/utc');
+const timezone = require('dayjs/plugin/timezone');
+const relativeTime = require('dayjs/plugin/relativeTime');
+
+dayjs.extend(isSameOrAfter);
+dayjs.extend(isSameOrBefore);
+dayjs.extend(utc);
+dayjs.extend(timezone);
+dayjs.extend(relativeTime);
+dayjs.tz.setDefault('Europe/London');
+
 /**
  * Get all members assigned to a trainer
  * @param {ObjectId} trainerId - Trainer's ID
@@ -85,7 +98,7 @@ const getPendingMemberRequests = async (trainerId) => {
 
   const enrichedRequests = requests.map((req) => ({
     ...req,
-    timeAgo: moment(req.createdAt).fromNow(),
+    timeAgo: dayjs(req.createdAt).fromNow(),
   }));
 
   return enrichedRequests;
@@ -174,7 +187,7 @@ const createWorkoutPlan = async (trainerId, memberId, workoutData) => {
     throw new ApiError(status.FORBIDDEN, 'You are not assigned to this member');
   }
 
-  if (new Date(workoutData.startDate) >= new Date(workoutData.endDate)) {
+  if (dayjs(workoutData.startDate).isSameOrAfter(dayjs(workoutData.endDate))){
     throw new ApiError(status.BAD_REQUEST, 'Start date must be before end date');
   }
 
@@ -182,7 +195,7 @@ const createWorkoutPlan = async (trainerId, memberId, workoutData) => {
     throw new ApiError(status.BAD_REQUEST, 'Weekly sessions data is required');
   }
 
-  const totalWeeks = moment(workoutData.endDate).diff(moment(workoutData.startDate), 'weeks') + 1;
+  const totalWeeks = dayjs(workoutData.endDate).diff(dayjs(workoutData.startDate), 'week') + 1;
 
   if (workoutData.weeklySessions.length !== totalWeeks) {
     throw new ApiError(status.BAD_REQUEST, 'Weekly session count must match total weeks in the plan');
@@ -199,10 +212,10 @@ const createWorkoutPlan = async (trainerId, memberId, workoutData) => {
   });
 
   const sessionsToCreate = [];
-  const baseStartDate = moment(workoutData.startDate);
+ const baseStartDate = dayjs(workoutData.startDate);
 
   for (const [index, week] of workoutData.weeklySessions.entries()) {
-    const weekStart = baseStartDate.clone().add(index, 'weeks');
+    const weekStart = baseStartDate.add(index, 'week');
 
     if (week.scheduleNow && Array.isArray(week.sessions)) {
       if (week.sessions.length !== week.sessionCount) {
@@ -244,10 +257,11 @@ const createWorkoutPlan = async (trainerId, memberId, workoutData) => {
         }
 
         if (slot) {
-          const scheduledDate = moment(
-            `${checkDate.format("YYYY-MM-DD")} ${slot.startTime}`,
-            "YYYY-MM-DD HH:mm"
-          );
+         const scheduledDate = dayjs.tz(
+          `${checkDate.format("YYYY-MM-DD")} ${slot.startTime}`,
+          'YYYY-MM-DD HH:mm',
+          'Europe/London'
+        );
 
           sessionsToCreate.push({
             memberId,
@@ -271,7 +285,7 @@ const createWorkoutPlan = async (trainerId, memberId, workoutData) => {
           }
 
           if (forceSchedule) {
-            const fallbackDate = checkDate.clone().hour(0).minute(0);
+            const fallbackDate = checkDate.set('hour', 0).set('minute', 0);
             sessionsToCreate.push({
               memberId,
               trainerId,
@@ -453,7 +467,7 @@ const getPendingSessionRequests = async (trainerId) => {
 };
 
 const getAllsessions = async (trainerId, type = null) => {
-  const today = new Date();
+  const today = dayjs().toDate();
   let query = { trainerId };
 
   if (type === 'upcoming') {

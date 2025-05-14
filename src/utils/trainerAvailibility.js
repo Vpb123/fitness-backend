@@ -58,8 +58,8 @@ const isTrainerAvailable = async (trainerId, scheduledDate, duration) => {
   if (dateSpecific) {
     console.log("Checking against date-specific availability...");
     for (const { startTime, endTime } of dateSpecific.slots) {
-      const slotStart = dayjs(`${dateStr}T${startTime}`).tz("Europe/London");
-      const slotEnd = dayjs(`${dateStr}T${endTime}`).tz("Europe/London");
+      const slotStart = dayjs.tz(`${dateStr}T${startTime}`, "Europe/London");
+      const slotEnd = dayjs.tz(`${dateStr}T${endTime}`, "Europe/London");
       console.log("Slot:", { slotStart: slotStart.format(), slotEnd: slotEnd.format() });
 
       if (targetStart.isSameOrAfter(slotStart) && targetEnd.isSameOrBefore(slotEnd)) {
@@ -74,9 +74,10 @@ const isTrainerAvailable = async (trainerId, scheduledDate, duration) => {
   const recurring = trainer.availabilityRecurring.find(entry => entry.dayOfWeek === targetDay);
   if (recurring) {
     console.log("Checking against recurring availability...");
+    console.log("Raw recurring slots:", recurring.slots);
     for (const { startTime, endTime } of recurring.slots) {
-      const slotStart = dayjs(`${dateStr}T${startTime}`).tz("Europe/London");
-      const slotEnd = dayjs(`${dateStr}T${endTime}`).tz("Europe/London");
+      const slotStart = dayjs.tz(`${dateStr}T${startTime}`, "Europe/London");
+      const slotEnd = dayjs.tz(`${dateStr}T${endTime}`, "Europe/London");
       console.log("Recurring Slot:", { slotStart: slotStart.format(), slotEnd: slotEnd.format() });
 
       if (targetStart.isSameOrAfter(slotStart) && targetEnd.isSameOrBefore(slotEnd)) {
@@ -118,12 +119,25 @@ const getTrainerAvailabilityForDate = async (trainerId, date) => {
   const slots = [];
 
   for (const slot of rawSlots) {
-    const slotStart = dayjs.utc(`${dateStr}T${slot.startTime}`).tz("Europe/London");
-    const slotEnd = dayjs.utc(`${dateStr}T${slot.endTime}`).tz("Europe/London");
+    const slotStart = dayjs.tz(`${dateStr}T${slot.startTime}`, "Europe/London");
+    const slotEnd = dayjs.tz(`${dateStr}T${slot.endTime}`, "Europe/London");
 
-    const overlaps = bookedSlots.some(({ start, end }) =>
-      isTimeOverlapping(slotStart, slotEnd, start, end)
-    );
+    console.log("Checking slot:", {
+      date: dateStr,
+      slotStart: slotStart.format(),
+      slotEnd: slotEnd.format()
+    });
+
+    const overlaps = bookedSlots.some(({ start, end }) => {
+      const overlap = isTimeOverlapping(slotStart, slotEnd, start, end);
+      if (overlap) {
+        console.log("Slot overlaps with booked session:", {
+          bookedStart: start.format(),
+          bookedEnd: end.format()
+        });
+      }
+      return overlap;
+    });
 
     if (!overlaps) {
       slots.push({ startTime: slot.startTime, endTime: slot.endTime });
@@ -174,12 +188,25 @@ const getTrainerAvailabilityForRange = async (trainerId, startDate, endDate) => 
     const daySlots = [];
 
     for (const slot of rawSlots) {
-      const slotStart = dayjs.utc(`${dateStr}T${slot.startTime}`).tz("Europe/London");
-      const slotEnd = dayjs.utc(`${dateStr}T${slot.endTime}`).tz("Europe/London");
+      const slotStart = dayjs.tz(`${dateStr}T${slot.startTime}`, "Europe/London");
+      const slotEnd = dayjs.tz(`${dateStr}T${slot.endTime}`, "Europe/London");
 
-      const overlaps = (bookedSlotsMap[dateStr] || []).some(({ start, end }) =>
-        isTimeOverlapping(slotStart, slotEnd, start, end)
-      );
+      console.log("Checking slot:", {
+        date: dateStr,
+        slotStart: slotStart.format(),
+        slotEnd: slotEnd.format()
+      });
+
+      const overlaps = (bookedSlotsMap[dateStr] || []).some(({ start, end }) => {
+        const overlap = isTimeOverlapping(slotStart, slotEnd, start, end);
+        if (overlap) {
+          console.log("Slot overlaps with booked session:", {
+            bookedStart: start.format(),
+            bookedEnd: end.format()
+          });
+        }
+        return overlap;
+      });
 
       if (!overlaps) {
         daySlots.push({
@@ -199,7 +226,6 @@ const getTrainerAvailabilityForRange = async (trainerId, startDate, endDate) => 
 
   return availability;
 };
-
 
 module.exports = {
   isTrainerAvailable,

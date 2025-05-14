@@ -1,8 +1,21 @@
 const { Trainer, TrainerRequest, Member, WorkoutPlan, TrainingSession, User } = require('../models/');
 const { status } = require('http-status');
-const moment = require('moment');
 const dayjs = require('dayjs');
+const isSameOrAfter = require('dayjs/plugin/isSameOrAfter');
+const isSameOrBefore = require('dayjs/plugin/isSameOrBefore');
+const utc = require('dayjs/plugin/utc');
+const timezone = require('dayjs/plugin/timezone');
+const isBetween = require('dayjs/plugin/isBetween');
+
+dayjs.extend(isBetween);
+dayjs.extend(isSameOrAfter);
+dayjs.extend(isSameOrBefore);
+dayjs.extend(utc);
+dayjs.extend(timezone);
+
+dayjs.tz.setDefault('Europe/London');
 const ApiError = require('../utils/ApiError');
+
 const { createNotification } = require('./notification.service');
 /**
  * Get paginated list of trainers with filters
@@ -40,19 +53,19 @@ const sendTrainerRequest = async (userId, memberId, requestData) => {
   const { trainerId, goalDescription } = requestData;
 
   const trainer = await Trainer.findById(trainerId).select('userId')
-  const user  = await User.findById(userId).select('firstName lastName');
+  const user = await User.findById(userId).select('firstName lastName');
   const existingRequest = await TrainerRequest.findOne({
     memberId,
     trainerId
   });
 
-  if(existingRequest!== null && existingRequest.status == 'rejected'){
-    await TrainerRequest.deleteOne({memberId: memberId, trainerId: trainerId})
-  } else{
+  if (existingRequest !== null && existingRequest.status == 'rejected') {
+    await TrainerRequest.deleteOne({ memberId: memberId, trainerId: trainerId })
+  } else {
     if (existingRequest !== null) {
       throw new ApiError(status.BAD_REQUEST, 'You already have a pending or accepted request with this trainer');
     }
-  } 
+  }
 
   const request = await TrainerRequest.create({
     memberId,
@@ -60,11 +73,11 @@ const sendTrainerRequest = async (userId, memberId, requestData) => {
     goalDescription,
   });
 
-   await createNotification({
-      userId: trainer.userId,
-      message:`New Connection Request by ${user.firstName} ${user.lastName}`,
-      type: 'connection_request',
-    });
+  await createNotification({
+    userId: trainer.userId,
+    message: `New Connection Request by ${user.firstName} ${user.lastName}`,
+    type: 'connection_request',
+  });
 
   return request;
 };
@@ -76,11 +89,11 @@ const sendTrainerRequest = async (userId, memberId, requestData) => {
  * @returns {Promise<Object>}
  */
 const getWeekNumberInWorkoutPlan = (planStartDate, sessionDate) => {
-  return moment(sessionDate).diff(moment(planStartDate).startOf('day'), 'weeks') + 1;
+  return dayjs(sessionDate).diff(dayjs(planStartDate).startOf('day'), 'week') + 1;
 };
 
 const requestTrainingSession = async (memberId, sessionData) => {
-  const member = await Member.findById(memberId).populate('userId', 'firstName lastName').populate('currentTrainerId', 'userId' );
+  const member = await Member.findById(memberId).populate('userId', 'firstName lastName').populate('currentTrainerId', 'userId');
   if (!member || !member.currentTrainerId) {
     throw new ApiError(status.BAD_REQUEST, 'You are not connected to any trainer');
   }
@@ -99,11 +112,11 @@ const requestTrainingSession = async (memberId, sessionData) => {
     throw new ApiError(status.BAD_REQUEST, 'No active workout plan with current trainer');
   }
 
-  const sessionDate = moment(sessionData.scheduledDate).startOf('day');
-  const planStart = moment(workoutPlan.startDate).startOf('day');
-  const planEnd = moment(workoutPlan.endDate).endOf('day');
+  const sessionDate = dayjs(sessionData.scheduledDate).startOf('day');
+  const planStart = dayjs(workoutPlan.startDate).startOf('day');
+  const planEnd = dayjs(workoutPlan.endDate).endOf('day');
 
-  if (!sessionDate.isBetween(planStart, planEnd, null, '[]')) {
+  if (!(sessionDate.isSame(planStart) || sessionDate.isSame(planEnd) || (sessionDate.isAfter(planStart) && sessionDate.isBefore(planEnd)))) {
     throw new ApiError(status.BAD_REQUEST, 'Scheduled date is outside the workout plan range');
   }
 
@@ -120,7 +133,7 @@ const requestTrainingSession = async (memberId, sessionData) => {
     scheduledDate: sessionDate.toDate()
   })
 
-  if(sessionExist){
+  if (sessionExist) {
     throw new ApiError(status.BAD_REQUEST, `Session already exists on ${sessionDate}`)
   }
 
@@ -138,7 +151,7 @@ const requestTrainingSession = async (memberId, sessionData) => {
 
   await createNotification({
     userId: member.currentTrainerId.userId,
-    message:`${member.userId.firstName} ${member.userId.lastName} has requested a session`,
+    message: `${member.userId.firstName} ${member.userId.lastName} has requested a session`,
     type: 'session_request',
   });
 
@@ -186,7 +199,7 @@ const cancelSession = async (memberId, sessionId) => {
   await session.save();
   await createNotification({
     userId: member.currentTrainerId.userId,
-    message:`Session was on ${session.scheduledDate} cancelled by ${member.userId.firsName}`,
+    message: `Session was on ${session.scheduledDate} cancelled by ${member.userId.firsName}`,
     type: 'member_cancelled_session',
   });
 
@@ -194,21 +207,18 @@ const cancelSession = async (memberId, sessionId) => {
 };
 
 const getSessionProgress = async (memberId, period) => {
-  const now = new Date();
+  const now = dayjs();
   let startDate;
 
   switch (period) {
     case 'week':
-      startDate = new Date(now);
-      startDate.setDate(now.getDate() - 7);
+      startDate = now.subtract(7, 'day');
       break;
     case 'month':
-      startDate = new Date(now);
-      startDate.setDate(now.getDate() - 30);
+      startDate = now.subtract(30, 'day');
       break;
     case 'live':
-      startDate = new Date(now);
-      startDate.setHours(0, 0, 0, 0); // Start of today
+      startDate = now.startOf('day');
       break;
     default:
       throw new ApiError(status.BAD_REQUEST, 'Invalid period. Use "week", "month", or "live".');
@@ -217,10 +227,16 @@ const getSessionProgress = async (memberId, period) => {
   const sessions = await TrainingSession.find({
     memberId,
     status: 'completed',
-    updatedAt: { $gte: startDate, $lte: now },
+    updatedAt: {
+      $gte: startDate.toDate(),
+      $lte: now.toDate(),
+    },
   });
 
-  const totalHours = sessions.reduce((sum, session) => sum + (session.actualHoursSpent || 0), 0);
+  const totalHours = sessions.reduce(
+    (sum, session) => sum + (session.actualHoursSpent || 0),
+    0
+  );
 
   return {
     period,
@@ -228,6 +244,7 @@ const getSessionProgress = async (memberId, period) => {
     sessionCount: sessions.length,
   };
 };
+
 
 const getWorkoutPlan = async (memberId) => {
   const workoutPlan = await WorkoutPlan.findOne({
@@ -282,7 +299,7 @@ const leaveTrainerReview = async (memberId, reviewData) => {
 };
 
 const getUpcomingPendingSessionsGroupedByWeek = async (memberId) => {
-  const today = moment().startOf('day');
+  const today = dayjs().startOf('day');
 
   const workoutPlan = await WorkoutPlan.findOne({
     memberId,
@@ -291,9 +308,9 @@ const getUpcomingPendingSessionsGroupedByWeek = async (memberId) => {
 
   if (!workoutPlan) return [];
 
-  const startDate = moment(workoutPlan.startDate);
+  const startDate = dayjs(workoutPlan.startDate);
 
-  const weeksSinceStart = today.diff(startDate, 'weeks');
+  const weeksSinceStart = today.diff(startDate, 'week');
 
   const upcomingWeeks = workoutPlan.weeklySessions.filter((week) => week.weekNumber > weeksSinceStart);
 
@@ -354,8 +371,8 @@ const requestPendingSession = async (memberId, { sessionId, scheduledDate, note,
     throw new ApiError(status.NOT_FOUND, 'Pending session not found or already requested');
   }
 
-  const today = moment().startOf('day');
-  const scheduled = moment(scheduledDate).startOf('day');
+  const today = dayjs().startOf('day');
+  const scheduled = dayjs(scheduledDate).startOf('day');
   if (scheduled.isBefore(today)) {
     throw new ApiError(status.BAD_REQUEST, 'Scheduled date cannot be in the past');
   }
@@ -380,16 +397,16 @@ const getMemberDetails = async (memberId) => {
   if (!trainer) {
     throw new ApiError(status.NOT_FOUND, 'Trainer not found');
   }
-  
-  return { result: trainer.userId.firstName + ' ' + trainer.userId.lastName, trainerId: member.currentTrainerId};
+
+  return { result: trainer.userId.firstName + ' ' + trainer.userId.lastName, trainerId: member.currentTrainerId };
 
 };
 
 const getMemberTrainerRequests = async (memberId) => {
-  const request = await TrainerRequest.find({memberId: memberId})
-  if(!request){
+  const request = await TrainerRequest.find({ memberId: memberId })
+  if (!request) {
     throw new ApiError(status.NOT_FOUND, 'Request not found')
-  } else{
+  } else {
     return request
   }
 }
